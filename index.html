@@ -50,17 +50,22 @@
     button:disabled{ opacity:.35; cursor:not-allowed; }
     .bp{ background:var(--tx); color:var(--bg); border:none; }
     .bp:not(:disabled):hover{ opacity:.85; }
-    .main{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:10px; overflow:auto; }
+    .main{ display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; min-height:500px; }
     .ph{ font-size:13px; color:var(--tx3); text-align:center; line-height:1.9; }
     .hint{ font-size:11px; color:var(--tx3); text-align:center; }
-    svg.net{ max-width:100%; height:auto; border:.5px solid var(--br); border-radius:var(--r); }
+    .preview-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:24px; overflow:auto; background:var(--bg3); }
+    .paper{ background:white; flex-shrink:0; position:relative; box-shadow:0 3px 16px rgba(0,0,0,0.2),0 0 0 0.5px rgba(0,0,0,0.08); }
+    .paper svg{ display:block; }
+    .paper-label{ position:absolute; bottom:-20px; left:0; right:0; text-align:center; font-size:11px; color:var(--tx3); white-space:nowrap; }
+    /* Hidden print SVG — full size, only shown when printing */
+    svg.net-print{ display:none; }
     @media print{
-      header,.side,.hint{ display:none!important; }
+      header,.side,.preview-area,.hint{ display:none!important; }
       body,.app{ background:#fff!important; border:none!important; margin:0!important; display:block!important; }
       .app{ grid-template-columns:1fr!important; border-radius:0!important; }
-      .main{ padding:0!important; }
+      .main{ padding:0!important; display:block!important; }
       .ph{ display:none!important; }
-      svg.net{ border:none!important; border-radius:0!important; width:100%!important; max-width:none!important; }
+      svg.net-print{ display:block!important; width:100vw!important; height:100vh!important; }
     }
     @media(max-width:700px){
       .app{ grid-template-columns:1fr; margin:0; border-radius:0; border-left:none; border-right:none; }
@@ -111,9 +116,16 @@
       <button class="bp" id="pb" disabled onclick="window.print()">Print net</button>
     </div>
   </div>
-  <div class="main">
+  <div class="main" id="main-panel">
     <div class="ph" id="ph">Select a solid and enter<br>dimensions to generate your net.</div>
-    <svg class="net" id="ns" style="display:none" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="preview-area" id="preview-area" style="display:none">
+      <div class="paper" id="paper-wrap">
+        <svg id="paper-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="paper-label" id="paper-label"></div>
+      </div>
+    </div>
+    <!-- Hidden SVG for printing at true scale (width/height in mm) -->
+    <svg class="net-print" id="ns" xmlns="http://www.w3.org/2000/svg" style="display:none"></svg>
     <div class="hint" id="nh"></div>
   </div>
 </div>
@@ -125,7 +137,7 @@ const TAB = 6;
 const BV  = TAB * 0.35;
 const CW  = 0.7;
 const FW  = 0.6;
-const FOOTER = 30;
+// FOOTER removed — key zone is now fixed in buildPageSVG
 const TABFILL = '#c8c8c8';
 
 const SOLIDS = {
@@ -159,7 +171,8 @@ function onSolid(){
   clearAll();
 }
 function clearAll(){
-  ['vb','fb','ns'].forEach(id=>document.getElementById(id).style.display='none');
+  ['vb','fb'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('preview-area').style.display='none';
   document.getElementById('ph').style.display='block';
   document.getElementById('nh').textContent='';
   document.getElementById('pb').disabled=true;
@@ -174,22 +187,81 @@ function rebuild(){
   document.getElementById('vu').textContent=v?' '+u+'³':'';
   if(!SOLIDS[s].dims.every(d=>gv(d.id)!==null)){clearAll();return;}
   const net=buildNet(s); if(!net)return;
-  const sc=Math.min(1,PW/net.W,PH/net.H), fits=sc>=1;
-  const svg=document.getElementById('ns');
-  svg.setAttribute('viewBox',`0 0 ${net.W} ${net.H}`);
-  svg.setAttribute('width',(net.W*sc).toFixed(2)+'mm');
-  svg.setAttribute('height',(net.H*sc).toFixed(2)+'mm');
-  svg.innerHTML=net.body;
-  svg.style.display='block';
+
+  // Scale net to fit within constrained drawing area (above key zone)
+  const sc=Math.min(1, NET_W/net.rawW, NET_H/net.rawH);
+  const fits=sc>=1;
+
+  // Build the full-page SVG (always PW × PH)
+  // Net is placed top-left at (PAD, PAD), scaled if needed
+  const pageSVG = buildPageSVG(s, net, sc);
+
+  // ── Print SVG (hidden, full physical size) ──
+  const printSvg=document.getElementById('ns');
+  printSvg.setAttribute('viewBox',`0 0 ${PW} ${PH}`);
+  printSvg.setAttribute('width', PW+'mm');
+  printSvg.setAttribute('height', PH+'mm');
+  printSvg.innerHTML=pageSVG;
+
+  // ── Paper preview ──
+  renderPaperPreview(pageSVG);
+
   document.getElementById('ph').style.display='none';
+  document.getElementById('preview-area').style.display='flex';
   document.getElementById('pb').disabled=false;
   document.getElementById('ls').style.display='block';
   document.getElementById('lg').style.display='flex';
+
   const fb=document.getElementById('fb');
   fb.style.display='block';
-  if(fits){fb.className='fit-badge ok';fb.textContent=`Fits on letter paper at full scale (${fmt(net.W,4)} \u00d7 ${fmt(net.H,4)} mm).`;}
-  else{const pct=Math.round(sc*100);fb.className='fit-badge warn';fb.textContent=`Too large \u2014 scaled to ${pct}% to fit. Reduce dimensions or print at ${pct}% scale.`;}
+  if(fits){
+    fb.className='fit-badge ok';
+    fb.textContent=`Net fits on letter paper at full scale (${fmt(net.rawW,4)} \u00d7 ${fmt(net.rawH,4)} mm).`;
+  } else {
+    const pct=Math.round(sc*100);
+    fb.className='fit-badge warn';
+    fb.textContent=`Too large \u2014 net scaled to ${pct}% to fit. Reduce dimensions to print full scale.`;
+  }
   document.getElementById('nh').textContent='Print at 100% \u2014 disable \u201cfit to page\u201d in your print dialog.';
+}
+
+// Compose the full-page SVG: net (scaled+translated) + key + scalebar
+function buildPageSVG(s, net, sc){
+  // Net is scaled and placed at (PAD, PAD)
+  const netSVG=`<svg x="${PAD}" y="${PAD}" width="${net.rawW*sc}" height="${net.rawH*sc}" viewBox="0 0 ${net.rawW} ${net.rawH}" overflow="visible">${net.body}</svg>`;
+  return netSVG + scaleBar() + infoKey(s);
+}
+
+// Render paper preview — takes the full-page SVG content and displays it on a paper silhouette
+function renderPaperPreview(pageSVGContent){
+  const paperW_mm=215.9, paperH_mm=279.4;
+  const margin_mm=12.7; // 0.5" margin where printable area starts
+
+  const panelW=document.getElementById('main-panel').clientWidth||600;
+  const panelH=Math.max(480, window.innerHeight-200);
+  const availW=panelW-48, availH=panelH-50;
+  const paperAspect=paperW_mm/paperH_mm;
+  let dispW=Math.min(availW, availH*paperAspect);
+  let dispH=dispW/paperAspect;
+  if(dispH>availH){dispH=availH;dispW=dispH*paperAspect;}
+
+  const wrap=document.getElementById('paper-wrap');
+  wrap.style.width=dispW+'px';
+  wrap.style.height=dispH+'px';
+
+  const svg=document.getElementById('paper-svg');
+  svg.setAttribute('width', dispW);
+  svg.setAttribute('height', dispH);
+  svg.setAttribute('viewBox', `0 0 ${paperW_mm} ${paperH_mm}`);
+
+  // Paper background
+  let body=`<rect x="0" y="0" width="${paperW_mm}" height="${paperH_mm}" fill="white"/>`;
+  // Printable area guide (dashed margin)
+  body+=`<rect x="${margin_mm}" y="${margin_mm}" width="${paperW_mm-margin_mm*2}" height="${paperH_mm-margin_mm*2}" fill="none" stroke="#e0e0e0" stroke-width="0.3" stroke-dasharray="2,2"/>`;
+  // Net + key + scalebar placed at margin offset (printable area starts at margin_mm)
+  body+=`<svg x="${margin_mm}" y="${margin_mm}" width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}">${pageSVGContent}</svg>`;
+
+  svg.innerHTML=body;
 }
 
 /* ══════════════════════════════════════════════════
@@ -223,10 +295,13 @@ function tabRect(x,y,w,dir){
 }
 // Filled tab on a slant edge (for pyramid/prism triangles)
 // The tab is a parallelogram-like strip on ONE side of the edge, pointing outward
-function tabSlant(x1,y1,x2,y2,side){
+// tabSlant: shrinkFrac controls how far inset from each vertex the tab starts.
+// Use larger shrink (0.22) so tabs never overlap adjacent faces at shared corners.
+function tabSlant(x1,y1,x2,y2,side,shrinkFrac){
+  shrinkFrac = shrinkFrac || 0.22;
   const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
   const nx=-dy/len*TAB*side, ny=dx/len*TAB*side;
-  const shrink=BV*0.8, ex=dx/len*shrink, ey=dy/len*shrink;
+  const shrink=len*shrinkFrac, ex=dx/len*shrink, ey=dy/len*shrink;
   const d=`M${x1},${y1} L${x1+ex+nx},${y1+ey+ny} L${x2-ex+nx},${y2-ey+ny} L${x2},${y2} Z`;
   return `<path d="${d}" fill="${TABFILL}" stroke="#111" stroke-width="${CW}" stroke-linejoin="round"/>`;
 }
@@ -255,21 +330,34 @@ function triLbl(ax,ay,bx,by,cx,cy,t){
   return `<text x="${(ax+bx+cx)/3}" y="${(ay+by+cy)/3}" text-anchor="middle" dominant-baseline="middle" font-size="3" font-family="sans-serif" fill="#ccc">${t}</text>`;
 }
 
-// Info key (bottom-right, below net in footer zone)
-function infoKey(s,W,H){
+// ── FIXED PAGE LAYOUT CONSTANTS ──
+// The SVG is always PW × PH (printable letter area).
+// Key is always bottom-right. Scale bar always bottom-left.
+// Net draws within the remaining top area.
+const KEY_W   = 56;                          // key box width mm
+const KEY_H   = 34;                          // key box height mm (enough for 4 lines)
+const SBAR_H  = 14;                          // scale bar zone height mm
+const MARGIN  = 6;                           // gap between net area and key/sbar mm
+// Net drawing area (top-left origin at PAD,PAD):
+const NET_W   = PW - PAD*2;                  // full width available
+const NET_H   = PH - PAD*2 - KEY_H - SBAR_H - MARGIN; // height above key zone
+
+// Info key — always at fixed bottom-right of the page
+function infoKey(s){
   const u=uu(), v=calcVol(s), info=SOLIDS[s];
   const lines=[{b:true,t:info.label}];
   info.dims.forEach(d=>{const val=gv(d.id);if(val)lines.push({b:false,t:`${d.label}: ${fmt(val)} ${u}`});});
   if(v)lines.push({b:false,t:`Volume: ${fmt(v)} ${u}\u00b3`});
-  const fs=3.5,lh=5.5,bp=5,bw=50,bh=lines.length*lh+bp*2;
-  const kx=W-PAD-bw, ky=H-PAD-bh;
-  let g=`<rect x="${kx}" y="${ky}" width="${bw}" height="${bh}" fill="white" fill-opacity="0.97" stroke="#111" stroke-width="0.4" rx="2"/>`;
-  lines.forEach((ln,i)=>g+=`<text x="${kx+bp}" y="${ky+bp+(i+0.75)*lh}" font-size="${fs}" font-family="sans-serif" font-weight="${ln.b?600:400}" fill="#111">${ln.t}</text>`);
+  const fs=3.5, lh=5.8, bp=5;
+  const kx=PW-PAD-KEY_W, ky=PH-PAD-KEY_H;
+  let g=`<rect x="${kx}" y="${ky}" width="${KEY_W}" height="${KEY_H}" fill="white" fill-opacity="0.97" stroke="#111" stroke-width="0.4" rx="2"/>`;
+  lines.forEach((ln,i)=>g+=`<text x="${kx+bp}" y="${ky+bp+(i+0.85)*lh}" font-size="${fs}" font-family="sans-serif" font-weight="${ln.b?600:400}" fill="#111">${ln.t}</text>`);
   return g;
 }
-// Scale bar (bottom-left)
-function scaleBar(W,H){
-  const x=PAD, y=H-PAD-4;
+
+// Scale bar — always bottom-left
+function scaleBar(){
+  const x=PAD, y=PH-PAD-5;
   return `<line x1="${x}" y1="${y}" x2="${x+10}" y2="${y}" stroke="#111" stroke-width="0.5"/>
 <line x1="${x}" y1="${y-3}" x2="${x}" y2="${y+3}" stroke="#111" stroke-width="0.5"/>
 <line x1="${x+10}" y1="${y-3}" x2="${x+10}" y2="${y+3}" stroke="#111" stroke-width="0.5"/>
@@ -278,9 +366,14 @@ function scaleBar(W,H){
 
 /* ══════════════════════════════════════════════════
    NET BUILDERS
+   Each builder returns {body, rawW, rawH} where
+   rawW/rawH are the natural net dimensions in mm.
+   The caller scales the net to fit within NET_W × NET_H
+   and wraps it in a fixed-page SVG.
 ══════════════════════════════════════════════════ */
 function buildNet(s){
-  let b='',W=0,H=0;
+  let b='', rawW=0, rawH=0;
+  const P=PAD; // shorthand
 
   /* ── RECTANGULAR PRISM ─────────────────────────────────────
      Layout (Taylor J's PDF page 2):
@@ -309,8 +402,8 @@ function buildNet(s){
     // Cross layout: center column x from cx
     const cx=PAD+w;
     const yTop=PAD, yFront=PAD+w, yBot=PAD+w+h, yBack=PAD+w+2*h;
-    W=PAD*2+w+l+w;
-    H=PAD+w+h+w+h+FOOTER;
+    rawrawW=PAD*2+w+l+w;
+    rawH=PAD+w+h+w+h;
 
     // ── Tabs first (so face lines draw on top) ──
     // Top face: top edge tab
@@ -376,8 +469,8 @@ function buildNet(s){
     const rectY=PAD+r*2;     // rect top is below top circle
     const cTopX=PAD+r+circ/2, cTopY=PAD+r;     // top circle center
     const cBotX=cTopX, cBotY=rectY+rectH+r;    // bottom circle center
-    W=PAD*2+circ+r;          // extra r on right for right tab
-    H=PAD+r*2+rectH+r*2+FOOTER;
+    rawW=PAD*2+circ+r;
+    rawH=PAD+r*2+rectH+r*2;
 
     // ── Tabs first ──
     // Right tab on rectangle
@@ -416,8 +509,8 @@ function buildNet(s){
     const a=toMM(gv('a')), h=toMM(gv('h'));
     const sl=Math.sqrt(h*h+(a/2)*(a/2));
     const bx=PAD+sl, by=PAD+sl;
-    W=PAD*2+sl+a+sl;
-    H=PAD+sl+a+sl+FOOTER;
+    rawW=PAD*2+sl+a+sl;
+    rawH=PAD+sl+a+sl;
 
     // ── Tabs first (alternating: top=right slant, bottom=left, left=top, right=bottom) ──
     // Top face: tab on RIGHT slant → from (bx+a,by) to apex (bx+a/2,by-sl), outside = right+up
@@ -453,8 +546,7 @@ function buildNet(s){
   /* ── TRIANGULAR PRISM ───────────────────────────────────────
      3 rectangles stacked vertically
      Triangles on LEFT and RIGHT of middle rectangle
-     Tabs: top/bottom/outer-side of rect1 and rect3
-           slant edges of both triangles (pointing outward)
+     Tabs: top of rect1, bottom of rect3, one slant per triangle
   ───────────────────────────────────────────────────────── */
   else if(s==='tri-prism'){
     const a=toMM(gv('a')), ht=toMM(gv('ht')), h=toMM(gv('h'));
@@ -462,33 +554,21 @@ function buildNet(s){
     const r1Y=PAD, r2Y=PAD+h, r3Y=PAD+2*h;
     const midY=r2Y+h/2;
     const lApx=PAD, rApx=colX+a+ht;
-    W=PAD*2+ht+a+ht;
-    H=PAD+3*h+FOOTER;
+    rawW=PAD*2+ht+a+ht;
+    rawH=PAD+3*h;
 
-    // ── Tabs first ──
-    // Rect 1 outer edges: top, left, right
-    b+=tabRect(colX,r1Y,a,'up');
-    b+=tabRect(colX,r1Y,h,'left');
-    b+=tabRect(colX+a,r1Y,h,'right');
-    // Rect 3 outer edges: bottom, left, right
-    b+=tabRect(colX,r3Y+h,a,'down');
-    b+=tabRect(colX,r3Y,h,'left');
-    b+=tabRect(colX+a,r3Y,h,'right');
-    // Left triangle slant tabs (both slant edges, pointing LEFT)
-    b+=tabSlant(colX,r2Y, lApx,midY, 1);
-    b+=tabSlant(colX,r2Y+h, lApx,midY, -1);
-    // Right triangle slant tabs (both slant edges, pointing RIGHT)
-    b+=tabSlant(colX+a,r2Y, rApx,midY, -1);
-    b+=tabSlant(colX+a,r2Y+h, rApx,midY, 1);
+    // ── Tabs first (4 only, matching reference PDF) ──
+    b+=tabRect(colX,r1Y,a,'up');                          // top of rect1
+    b+=tabRect(colX,r3Y+h,a,'down');                      // bottom of rect3
+    b+=tabSlant(colX,r2Y, lApx,midY, 1);                  // top slant of left triangle
+    b+=tabSlant(colX+a,r2Y+h, rApx,midY, 1);             // bottom slant of right triangle
 
     // ── Face outlines (cut) ──
     b+=C(`M${colX},${r1Y}h${a}v${h}h${-a}Z`);
     b+=C(`M${colX},${r2Y}h${a}v${h}h${-a}Z`);
     b+=C(`M${colX},${r3Y}h${a}v${h}h${-a}Z`);
-    // Left triangle
-    b+=C(`M${colX},${r2Y}L${lApx},${midY}L${colX},${r2Y+h}`);
-    // Right triangle
-    b+=C(`M${colX+a},${r2Y}L${rApx},${midY}L${colX+a},${r2Y+h}`);
+    b+=C(`M${colX},${r2Y}L${lApx},${midY}L${colX},${r2Y+h}`);   // Left triangle
+    b+=C(`M${colX+a},${r2Y}L${rApx},${midY}L${colX+a},${r2Y+h}`); // Right triangle
 
     // ── Fold lines ──
     b+=F(`M${colX},${r2Y}h${a}`);     // rect1/rect2
@@ -523,12 +603,12 @@ function buildNet(s){
     // For the circle: center it directly below the arc's lowest point
     const arcBot=cy+sl*Math.sin(arc/2-PI/2+PI/2); // just cy for centered
     // Place circle so its top edge touches the midpoint bottom of the sector arc
-    const c2y=cy+sl+r+4;
-    W=PAD*2+sl*2;
-    H=PAD+sl+4+r*2+FOOTER;
+    const c2y=cy+sl+8+r;    // gap of 8mm between sector bottom and circle top
+    rawW=PAD*2+sl*2;
+    rawH=PAD+2*sl+8+r*2;
 
-    // ── Tab: along right straight edge of sector (x2,y2 is bottom-right of arc) ──
-    b+=tabSlant(cx,cy, x2,y2, -1);
+    // ── Tab on RIGHT straight edge (cx,cy)->(x2,y2), pointing outward ──
+    b+=tabSlant(cx,cy, x2,y2, 1);
 
     // ── Small tabs on the base circle ──
     b+=tabCircle(cx,c2y,r,180,28);  // left
@@ -546,9 +626,7 @@ function buildNet(s){
     b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Base</text>`;
   }
 
-  b+=scaleBar(W,H);
-  b+=infoKey(s,W,H);
-  return{body:b, W:Math.ceil(W), H:Math.ceil(H)};
+  return{body:b, rawW:Math.ceil(rawW), rawH:Math.ceil(rawH)};
 }
 </script>
 </body>

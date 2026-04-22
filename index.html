@@ -44,7 +44,7 @@
     .legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--tx2); }
     .leg-cut { width:28px; border-top:1.5px solid var(--tx); }
     .leg-fold{ width:28px; border-top:1.5px dashed var(--tx2); }
-    .leg-tab { width:28px; height:10px; border:1.5px solid var(--tx); border-radius:1px; }
+    .leg-tab { width:28px; height:10px; border:1.5px dashed var(--tx2); border-radius:3px; }
     .btns{ margin-top:auto; display:flex; flex-direction:column; gap:8px; }
     button{ width:100%; font-size:13px; padding:9px 0; border-radius:var(--r); cursor:pointer; font-family:inherit; font-weight:500; }
     button:disabled{ opacity:.35; cursor:not-allowed; }
@@ -105,7 +105,7 @@
     <div class="legend" id="lg" style="display:none">
       <div class="legend-item"><div class="leg-cut"></div>Cut</div>
       <div class="legend-item"><div class="leg-fold"></div>Fold</div>
-      <div class="legend-item"><div class="leg-tab"></div>Glue tab</div>
+      <div class="legend-item"><div class="leg-tab"></div>Glue tab (cut on dashed line)</div>
     </div>
     <div class="btns">
       <button class="bp" id="pb" disabled onclick="window.print()">Print net</button>
@@ -119,27 +119,29 @@
 </div>
 <script>
 const PI = Math.PI;
-const PW = 190.5, PH = 254; // printable letter paper in mm (0.5" margins)
-const PAD = 10;              // SVG page margin mm
-const TAB = 5;               // glue tab depth mm
-const CW  = 0.5;             // cut stroke-width mm
-const FW  = 0.5;             // fold stroke-width mm
+const PW = 190.5, PH = 254; // printable letter paper mm
+const PAD = 12;              // SVG page margin mm
+const TAB = 6;               // glue tab depth mm
+const BEVEL = TAB * 0.45;    // corner bevel for tab (matches PDF octagon look)
+const CW = 0.6;              // cut stroke-width mm
+const FW = 0.5;              // fold stroke-width mm
+const TW = 0.5;              // tab stroke-width mm
 
 const SOLIDS = {
   'rect-prism':{ label:'Rectangular prism', dims:[{id:'l',label:'Length'},{id:'w',label:'Width'},{id:'h',label:'Height'}] },
-  'cylinder':  { label:'Cylinder',           dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
-  'sq-pyramid':{ label:'Square pyramid',     dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
-  'tri-prism': { label:'Triangular prism',   dims:[{id:'a',label:'Triangle base'},{id:'ht',label:'Triangle height'},{id:'h',label:'Prism length'}] },
-  'cone':      { label:'Cone',               dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
+  'cylinder':  { label:'Cylinder',          dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
+  'sq-pyramid':{ label:'Square pyramid',    dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'tri-prism': { label:'Triangular prism',  dims:[{id:'a',label:'Triangle base'},{id:'ht',label:'Triangle height'},{id:'h',label:'Prism length'}] },
+  'cone':      { label:'Cone',              dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
 };
 
 function gv(id){ const e=document.getElementById('d_'+id); if(!e)return null; const v=parseFloat(e.value); return(!e.value||isNaN(v)||v<=0)?null:v; }
 function uu(){ return document.getElementById('unit').value; }
 function mm(v){ return uu()==='cm'?v*10:v; }
 function fmt(v,d){ return parseFloat(v.toPrecision(d||4)).toString(); }
-function fdim(v){ return fmt(v)+' '+uu(); }
+function fdim(v){ return fmt(v)+'\u00a0'+uu(); }
 
-function vol(s){
+function calcVol(s){
   if(s==='rect-prism'){const l=gv('l'),w=gv('w'),h=gv('h');return(l&&w&&h)?l*w*h:null;}
   if(s==='cylinder')  {const r=gv('r'),h=gv('h');return(r&&h)?PI*r*r*h:null;}
   if(s==='sq-pyramid'){const a=gv('a'),h=gv('h');return(a&&h)?(1/3)*a*a*h:null;}
@@ -150,13 +152,13 @@ function vol(s){
 function onSolid(){
   const s=document.getElementById('solid').value;
   const df=document.getElementById('df');
-  if(!s){df.style.display='none';clear();return;}
+  if(!s){df.style.display='none';clearAll();return;}
   df.style.display='flex';
   df.innerHTML='<div class="sec">Dimensions</div>'+
     SOLIDS[s].dims.map(d=>`<div class="field"><label>${d.label}</label><input type="number" id="d_${d.id}" min="0.1" step="any" placeholder="e.g. ${uu()==='cm'?'5':'50'}" oninput="rebuild()"></div>`).join('');
-  clear();
+  clearAll();
 }
-function clear(){
+function clearAll(){
   ['vb','fb','ns'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('ph').style.display='block';
   document.getElementById('nh').textContent='';
@@ -166,11 +168,11 @@ function clear(){
 }
 function rebuild(){
   const s=document.getElementById('solid').value; if(!s)return;
-  const v=vol(s), u=uu();
+  const v=calcVol(s), u=uu();
   document.getElementById('vb').style.display='block';
   document.getElementById('vv').textContent=v?fmt(v):'—';
   document.getElementById('vu').textContent=v?' '+u+'³':'';
-  if(!SOLIDS[s].dims.every(d=>gv(d.id)!==null)){clear();return;}
+  if(!SOLIDS[s].dims.every(d=>gv(d.id)!==null)){clearAll();return;}
 
   const net=buildNet(s); if(!net)return;
   const sc=Math.min(1,PW/net.W,PH/net.H), fits=sc>=1;
@@ -187,294 +189,358 @@ function rebuild(){
 
   const fb=document.getElementById('fb');
   fb.style.display='block';
-  if(fits){ fb.className='fit-badge ok';   fb.textContent=`Fits on letter paper at full scale (${fmt(net.W,4)} × ${fmt(net.H,4)} mm).`; }
-  else    { fb.className='fit-badge warn'; fb.textContent=`Too large — scaled to ${Math.round(sc*100)}% to fit. Reduce dimensions or print at ${Math.round(sc*100)}% scale.`; }
-  document.getElementById('nh').textContent='Print at 100% — disable "fit to page" in your print dialog.';
+  if(fits){ fb.className='fit-badge ok'; fb.textContent=`Fits on letter paper at full scale (${fmt(net.W,4)}\u00d7${fmt(net.H,4)}\u00a0mm).`; }
+  else    { fb.className='fit-badge warn'; fb.textContent=`Too large \u2014 scaled to ${Math.round(sc*100)}% to fit. Reduce dimensions or print at ${Math.round(sc*100)}% scale.`; }
+  document.getElementById('nh').textContent='Print at 100% \u2014 disable \u201cfit to page\u201d in your print dialog.';
 }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    SVG PRIMITIVES
-══════════════════════════════════════════ */
+   C() = solid cut line
+   F() = dashed fold line
+   T() = dashed tab outline (beveled rectangle matching PDF style)
+══════════════════════════════════════════════════════ */
+
 // Solid cut line
-function C(d){ return `<path d="${d}" fill="none" stroke="#1a1a1a" stroke-width="${CW}" stroke-linecap="round" stroke-linejoin="round"/>`; }
-// Dashed fold line
-function F(d){ return `<path d="${d}" fill="none" stroke="#888" stroke-width="${FW}" stroke-dasharray="2,1.5" stroke-linecap="round"/>`; }
-// Glue tab — outline only, NO fill, NO shading. Sits OUTSIDE the face edge.
-// Returns cut-path string for the three outer sides of the trapezoid.
-// The inner edge is the face edge itself (already drawn as cut or fold).
-function tabRect(x,y,w,side){
-  // side: 'top','bottom','left','right'
-  const s=TAB*.35;
-  if(side==='top')   return `M${x},${y}L${x-s},${y-TAB}L${x+w+s},${y-TAB}L${x+w},${y}`;
-  if(side==='bottom')return `M${x},${y}L${x-s},${y+TAB}L${x+w+s},${y+TAB}L${x+w},${y}`;
-  if(side==='left')  return `M${x},${y}L${x-TAB},${y-s}L${x-TAB},${y+w+s}L${x},${y+w}`;
-  if(side==='right') return `M${x},${y}L${x+TAB},${y-s}L${x+TAB},${y+w+s}L${x},${y+w}`;
+function C(d){ return `<path d="${d}" fill="none" stroke="#111" stroke-width="${CW}" stroke-linecap="round" stroke-linejoin="round"/>`; }
+// Dashed fold line (internal shared edge)
+function F(d){ return `<path d="${d}" fill="none" stroke="#555" stroke-width="${FW}" stroke-dasharray="2.5,1.5" stroke-linecap="round"/>`; }
+
+// Beveled rectangular tab — matches octagon/rounded look in PDF reference
+// Sits OUTSIDE the face. Parameters: which edge of what face, w = width along edge
+function tabBevelRect(ex,ey,ew,eh,dir){
+  // ex,ey = top-left of the edge side the tab sits on
+  // ew = width along edge, eh = depth of tab (=TAB)
+  // dir: 'up','down','left','right' — which way tab sticks out
+  const b=BEVEL;
+  let d;
+  if(dir==='up')    d=`M${ex+b},${ey}L${ex+ew-b},${ey}L${ex+ew},${ey-b}L${ex+ew},${ey-eh+b}L${ex+ew-b},${ey-eh}L${ex+b},${ey-eh}L${ex},${ey-eh+b}L${ex},${ey-b}Z`;
+  if(dir==='down')  d=`M${ex},${ey}L${ex+ew},${ey}L${ex+ew},${ey+eh-b}L${ex+ew-b},${ey+eh}L${ex+b},${ey+eh}L${ex},${ey+eh-b}Z`;
+  if(dir==='left')  d=`M${ex},${ey}L${ex},${ey+ew}L${ex-eh+b},${ey+ew}L${ex-eh},${ey+ew-b}L${ex-eh},${ey+b}L${ex-eh+b},${ey}Z`;
+  if(dir==='right') d=`M${ex},${ey}L${ex},${ey+ew}L${ex+eh-b},${ey+ew}L${ex+eh},${ey+ew-b}L${ex+eh},${ey+b}L${ex+eh-b},${ey}Z`;
+  return `<path d="${d}" fill="none" stroke="#555" stroke-width="${TW}" stroke-dasharray="2.5,1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
-// Tab along an arbitrary edge (for triangular faces) — outward only
-function tabEdge(x1,y1,x2,y2,side){
+
+// Tab along an arbitrary slant edge (for triangles). Sits OUTSIDE.
+// Returns dashed path outline of the tab trapezoid
+function tabSlant(x1,y1,x2,y2,side){
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
   const nx=-dy/len*TAB*side, ny=dx/len*TAB*side;
-  const shrink=TAB*.3, ex=dx/len*shrink, ey=dy/len*shrink;
-  // Trapezoid: from (x1,y1)→(x2,y2) on face edge, offset corners shrunk inward
-  return `M${x1},${y1}L${x1+ex+nx},${y1+ey+ny}L${x2-ex+nx},${y2-ey+ny}L${x2},${y2}`;
+  const shrink=BEVEL, ex=dx/len*shrink, ey=dy/len*shrink;
+  const ox1=x1+ex+nx, oy1=y1+ey+ny;
+  const ox2=x2-ex+nx, oy2=y2-ey+ny;
+  const d=`M${x1},${y1}L${ox1},${oy1}L${ox2},${oy2}L${x2},${y2}`;
+  return `<path d="${d}" fill="none" stroke="#555" stroke-width="${TW}" stroke-dasharray="2.5,1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
-// Face label (light gray, centered)
+// Face label
 function lbl(x,y,w,h,t){
-  const fs=Math.max(2.5,Math.min(5,w/5,h/3));
-  return `<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#aaa">${t}</text>`;
+  if(!t)return'';
+  const fs=Math.max(2.5,Math.min(5,w/6,h/4));
+  return `<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#bbb">${t}</text>`;
 }
-function triLbl(ax,ay,bx,by,cx2,cy2,t){
-  const fs=3.5;
-  return `<text x="${(ax+bx+cx2)/3}" y="${(ay+by+cy2)/3}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#aaa">${t}</text>`;
+function triLbl(ax,ay,bx,by,cx,cy,t){
+  return `<text x="${(ax+bx+cx)/3}" y="${(ay+by+cy)/3+0.5}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#bbb">${t}</text>`;
 }
 
-/* ── Info key ── */
+// Info key in bottom-right
 function key(s,W,H){
-  const u=uu(), v=vol(s), info=SOLIDS[s];
+  const u=uu(), v=calcVol(s), info=SOLIDS[s];
   const lines=[{b:true,t:info.label}];
-  info.dims.forEach(d=>{const val=gv(d.id); if(val)lines.push({b:false,t:`${d.label}: ${fmt(val)} ${u}`});});
-  if(v) lines.push({b:false,t:`Volume: ${fmt(v)} ${u}\u00b3`});
-  const fs=3.5,lh=5.5,bp=4,bw=45,bh=lines.length*lh+bp*2;
-  const kx=W-PAD-bw, ky=H-PAD-bh-16;
-  let g=`<rect x="${kx}" y="${ky}" width="${bw}" height="${bh}" fill="white" fill-opacity="0.97" stroke="#1a1a1a" stroke-width="0.4" rx="1.5"/>`;
-  lines.forEach((ln,i)=>{ g+=`<text x="${kx+bp}" y="${ky+bp+i*lh+fs*.85}" font-size="${fs}" font-family="sans-serif" font-weight="${ln.b?600:400}" fill="#1a1a1a">${ln.t}</text>`; });
+  info.dims.forEach(d=>{const val=gv(d.id);if(val)lines.push({b:false,t:`${d.label}: ${fmt(val)}\u00a0${u}`});});
+  if(v)lines.push({b:false,t:`Volume: ${fmt(v)}\u00a0${u}\u00b3`});
+  const fs=3.5,lh=5.5,bp=4,bw=46,bh=lines.length*lh+bp*2;
+  const kx=W-PAD-bw,ky=H-PAD-bh-14;
+  let g=`<rect x="${kx}" y="${ky}" width="${bw}" height="${bh}" fill="white" fill-opacity="0.97" stroke="#111" stroke-width="0.4" rx="2"/>`;
+  lines.forEach((ln,i)=>g+=`<text x="${kx+bp}" y="${ky+bp+i*lh+fs*.85}" font-size="${fs}" font-family="sans-serif" font-weight="${ln.b?600:400}" fill="#111">${ln.t}</text>`);
   return g;
 }
 
-/* ── Scale bar ── */
+// Scale bar bottom-left
 function sbar(W,H){
   const x=PAD,y=H-PAD-3;
-  return `<line x1="${x}" y1="${y}" x2="${x+10}" y2="${y}" stroke="#1a1a1a" stroke-width="0.5"/>` +
-    `<line x1="${x}" y1="${y-2.5}" x2="${x}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>` +
-    `<line x1="${x+10}" y1="${y-2.5}" x2="${x+10}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>` +
-    `<text x="${x+5}" y="${y-4}" text-anchor="middle" font-size="3" font-family="sans-serif" fill="#555">10 mm</text>`;
+  return `<line x1="${x}" y1="${y}" x2="${x+10}" y2="${y}" stroke="#111" stroke-width="0.5"/>
+    <line x1="${x}" y1="${y-3}" x2="${x}" y2="${y+3}" stroke="#111" stroke-width="0.5"/>
+    <line x1="${x+10}" y1="${y-3}" x2="${x+10}" y2="${y+3}" stroke="#111" stroke-width="0.5"/>
+    <text x="${x+5}" y="${y-4.5}" text-anchor="middle" font-size="3" font-family="sans-serif" fill="#555">10\u00a0mm</text>`;
 }
 
-/* ══════════════════════════════════════════
-   NET BUILDERS
-   Rules:
-   - Cut line  = outer boundary of each face + outer edges of tabs
-   - Fold line = shared edge between two adjacent faces
-   - Tabs      = trapezoid outline only, no fill, always OUTSIDE face boundary
-   - No dimension lines on the net — info lives in the key box
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   NET BUILDERS — layouts matched to PDF reference
+══════════════════════════════════════════════════════ */
 function buildNet(s){
   let b='',W=0,H=0;
 
-  /* ── RECTANGULAR PRISM ─────────────────────────────────────────
-     Cross layout (viewed from above):
-           [Top]
-     [Left][Front][Right]
-           [Bottom]
-           [Back]
-     Fold edges: Top/Front, Front/Left, Front/Right, Front/Bottom, Bottom/Back
-     Tabs on all remaining free outer edges.
+  /* ── RECTANGULAR PRISM ────────────────────────────────────────
+     Reference PDF layout (page 2):
+     Top row: [Left(w×h)] [Top(l×w)] [Right(w×h)]   — tabs on top of all 3
+     Below Top: [Front(l×h)]
+     Below Front: [Bottom(l×w)]   — actually same as Top
+     Below Bottom: [Back(l×h)]
+     Tabs: top edges of top-row faces, outer sides of Left/Right,
+           bottom of Back, sides of Front/Bottom/Back
+
+     Actually re-reading page 2 carefully: it's a T shape rotated:
+     Row 1 (top): Left | Front-top | Right  (all same height h)
+     Column below Front-top: Front-mid, Bottom, Back
+     So: Left and Right are on sides of the TOP face
   ─────────────────────────────────────────────────────────────── */
   if(s==='rect-prism'){
-    const l=mm(gv('l')),w=mm(gv('w')),h=mm(gv('h'));
-    const cx=PAD+h;
-    const yTop=PAD, yFront=PAD+w, yBot=PAD+w+h, yBack=PAD+w+2*h;
-    W=PAD*2+h+l+h; H=PAD*2+w+2*h+w+20;
+    const l=mm(gv('l')), w=mm(gv('w')), h=mm(gv('h'));
+    // Layout matching PDF page 2:
+    // Row 1: [Left w×h] [Top l×w] [Right w×h]  — top row
+    // Below Top column: [Front l×h] [Bottom l×w] [Back l×h]
+    const row1Y = PAD;
+    const topX  = PAD + w;           // Top face x
+    const leftX = PAD;               // Left face x
+    const rightX= PAD + w + l;       // Right face x
+    const frontY = PAD + w;
+    const botY   = PAD + w + h;
+    const backY  = PAD + w + 2*h;
 
-    // Draw faces as closed cut paths
+    W = PAD*2 + w + l + w;
+    H = PAD*2 + w + h + w + h + 14;
+
+    // ── Face outlines (cut) ──
     // Top face
-    b+=C(`M${cx},${yTop}h${l}v${w}h${-l}Z`);
-    // Front face
-    b+=C(`M${cx},${yFront}h${l}v${h}h${-l}Z`);
-    // Bottom face
-    b+=C(`M${cx},${yBot}h${l}v${w}h${-l}Z`);
-    // Back face
-    b+=C(`M${cx},${yBack}h${l}v${h}h${-l}Z`);
+    b+=C(`M${topX},${row1Y}h${l}v${w}h${-l}Z`);
     // Left face
-    b+=C(`M${PAD},${yFront}h${h}v${h}h${-h}Z`);
+    b+=C(`M${leftX},${row1Y}h${w}v${h}h${-w}Z`);
     // Right face
-    b+=C(`M${cx+l},${yFront}h${h}v${h}h${-h}Z`);
+    b+=C(`M${rightX},${row1Y}h${w}v${h}h${-w}Z`);
+    // Front face
+    b+=C(`M${topX},${frontY}h${l}v${h}h${-l}Z`);
+    // Bottom face
+    b+=C(`M${topX},${botY}h${l}v${w}h${-l}Z`);
+    // Back face
+    b+=C(`M${topX},${backY}h${l}v${h}h${-l}Z`);
 
-    // Fold lines (shared edges)
-    b+=F(`M${cx},${yFront}h${l}`);             // Top/Front
-    b+=F(`M${cx},${yFront}v${h}`);             // Front/Left
-    b+=F(`M${cx+l},${yFront}v${h}`);           // Front/Right
-    b+=F(`M${cx},${yBot}h${l}`);               // Front/Bottom
-    b+=F(`M${cx},${yBack}h${l}`);              // Bottom/Back
+    // ── Fold lines (shared edges) ──
+    b+=F(`M${topX},${frontY}h${l}`);                    // Top/Front (= Top bottom edge)
+    b+=F(`M${topX},${frontY}v${-w}`);                   // Top/Left  (left side of Top = right side of Left)
+    // Actually Left right edge = Top left edge:
+    b+=F(`M${topX},${row1Y}v${w}`);                     // Top-left vertical = Left/Top shared
+    b+=F(`M${rightX},${row1Y}v${w}`);                   // Right-left vertical = Top/Right shared — wait
+    // Let me be precise:
+    // Left face RIGHT edge shares with Top face LEFT edge
+    b+=F(`M${PAD+w},${row1Y}v${h}`);                   // Left/Top shared vertical
+    // Top face RIGHT edge shares with Right face LEFT edge
+    b+=F(`M${PAD+w+l},${row1Y}v${h}`);                 // Top/Right shared vertical
+    // Top face BOTTOM edge shares with Front face TOP edge
+    b+=F(`M${topX},${row1Y+w}h${l}`);                  // Top/Front
+    // Front face BOTTOM edge shares with Bottom face TOP edge
+    b+=F(`M${topX},${frontY+h}h${l}`);                 // Front/Bottom
+    // Bottom face BOTTOM edge shares with Back face TOP edge
+    b+=F(`M${topX},${botY+w}h${l}`);                   // Bottom/Back
 
-    // Tabs — outer edges only, drawn as outlines sitting OUTSIDE each face
-    // Top face: top edge, left edge, right edge
-    b+=C(tabRect(cx,yTop,l,'top'));
-    b+=C(tabRect(yTop,cx,w,'left').replace(/L/g,'L')); // need vertical tab — use tabRect differently
+    // ── Tabs (dashed, outside faces) ──
+    // Top edge of Left face
+    b+=tabBevelRect(leftX,row1Y,w,TAB,'up');
+    // Left edge of Left face
+    b+=tabBevelRect(leftX,row1Y,h,TAB,'left');
+    // Bottom edge of Left face
+    b+=tabBevelRect(leftX,row1Y+h,w,TAB,'down');
+    // Top edge of Top face
+    b+=tabBevelRect(topX,row1Y,l,TAB,'up');
+    // Top edge of Right face
+    b+=tabBevelRect(rightX,row1Y,w,TAB,'up');
+    // Right edge of Right face
+    b+=tabBevelRect(rightX,row1Y,h,TAB,'right');
+    // Bottom edge of Right face
+    b+=tabBevelRect(rightX,row1Y+h,w,TAB,'down');
+    // Left edge of Front face
+    b+=tabBevelRect(topX,frontY,h,TAB,'left');
+    // Right edge of Front face
+    b+=tabBevelRect(topX+l,frontY,h,TAB,'right');
+    // Left edge of Bottom face
+    b+=tabBevelRect(topX,botY,w,TAB,'left');
+    // Right edge of Bottom face
+    b+=tabBevelRect(topX+l,botY,w,TAB,'right');
+    // Left edge of Back face
+    b+=tabBevelRect(topX,backY,h,TAB,'left');
+    // Right edge of Back face
+    b+=tabBevelRect(topX+l,backY,h,TAB,'right');
+    // Bottom edge of Back face
+    b+=tabBevelRect(topX,backY+h,l,TAB,'down');
 
-    // Rebuild tabRect to handle left/right on top face cleanly:
-    // Left side of Top: vertical edge at x=cx from y=yTop to y=yTop+w → tab goes LEFT
-    b+=C(`M${cx},${yTop}L${cx-TAB},${yTop-TAB*.35}L${cx-TAB},${yTop+w+TAB*.35}L${cx},${yTop+w}`);
-    // Right side of Top
-    b+=C(`M${cx+l},${yTop}L${cx+l+TAB},${yTop-TAB*.35}L${cx+l+TAB},${yTop+w+TAB*.35}L${cx+l},${yTop+w}`);
-    // Top edge of Top
-    b+=C(`M${cx},${yTop}L${cx-TAB*.35},${yTop-TAB}L${cx+l+TAB*.35},${yTop-TAB}L${cx+l},${yTop}`);
-
-    // Back face: bottom, left, right
-    b+=C(`M${cx},${yBack+h}L${cx-TAB*.35},${yBack+h+TAB}L${cx+l+TAB*.35},${yBack+h+TAB}L${cx+l},${yBack+h}`);
-    b+=C(`M${cx},${yBack}L${cx-TAB},${yBack-TAB*.35}L${cx-TAB},${yBack+h+TAB*.35}L${cx},${yBack+h}`);
-    b+=C(`M${cx+l},${yBack}L${cx+l+TAB},${yBack-TAB*.35}L${cx+l+TAB},${yBack+h+TAB*.35}L${cx+l},${yBack+h}`);
-
-    // Left face: top, bottom, left
-    b+=C(`M${PAD},${yFront}L${PAD-TAB*.35},${yFront-TAB}L${PAD+h+TAB*.35},${yFront-TAB}L${PAD+h},${yFront}`);
-    b+=C(`M${PAD},${yFront+h}L${PAD-TAB*.35},${yFront+h+TAB}L${PAD+h+TAB*.35},${yFront+h+TAB}L${PAD+h},${yFront+h}`);
-    b+=C(`M${PAD},${yFront}L${PAD-TAB},${yFront-TAB*.35}L${PAD-TAB},${yFront+h+TAB*.35}L${PAD},${yFront+h}`);
-
-    // Right face: top, bottom, right
-    b+=C(`M${cx+l},${yFront}L${cx+l-TAB*.35},${yFront-TAB}L${cx+l+h+TAB*.35},${yFront-TAB}L${cx+l+h},${yFront}`);
-    b+=C(`M${cx+l},${yFront+h}L${cx+l-TAB*.35},${yFront+h+TAB}L${cx+l+h+TAB*.35},${yFront+h+TAB}L${cx+l+h},${yFront+h}`);
-    b+=C(`M${cx+l+h},${yFront}L${cx+l+h+TAB},${yFront-TAB*.35}L${cx+l+h+TAB},${yFront+h+TAB*.35}L${cx+l+h},${yFront+h}`);
-
-    // Bottom face: left, right, bottom
-    b+=C(`M${cx},${yBot}L${cx-TAB},${yBot-TAB*.35}L${cx-TAB},${yBot+w+TAB*.35}L${cx},${yBot+w}`);
-    b+=C(`M${cx+l},${yBot}L${cx+l+TAB},${yBot-TAB*.35}L${cx+l+TAB},${yBot+w+TAB*.35}L${cx+l},${yBot+w}`);
-    b+=C(`M${cx},${yBot+w}L${cx-TAB*.35},${yBot+w+TAB}L${cx+l+TAB*.35},${yBot+w+TAB}L${cx+l},${yBot+w}`);
-
-    // Face labels
-    b+=lbl(cx,yTop,l,w,'Top');
-    b+=lbl(cx,yFront,l,h,'Front');
-    b+=lbl(cx,yBot,l,w,'Bottom');
-    b+=lbl(cx,yBack,l,h,'Back');
-    b+=lbl(PAD,yFront,h,h,'Left');
-    b+=lbl(cx+l,yFront,h,h,'Right');
+    // ── Labels ──
+    b+=lbl(leftX,row1Y,w,h,'Left');
+    b+=lbl(topX,row1Y,l,w,'Top');
+    b+=lbl(rightX,row1Y,w,h,'Right');
+    b+=lbl(topX,frontY,l,h,'Front');
+    b+=lbl(topX,botY,l,w,'Bottom');
+    b+=lbl(topX,backY,l,h,'Back');
   }
 
-  /* ── CYLINDER ──────────────────────────────────────────────────
-     Two circles + rectangle. Circles touch rectangle top/bottom (fold).
-     Tabs on left/right sides of rectangle only.
+  /* ── CYLINDER ─────────────────────────────────────────────────
+     Reference PDF layout (page 4):
+     Rectangle in CENTER
+     Circle on LEFT (center-left of rectangle, touching left edge)
+     Circle on RIGHT (center-right of rectangle, touching right edge)
+     Tab on TOP edge of rectangle only
+     Fold: top and bottom of rectangle (where circles would attach in 3D)
+           but circles are placed LEFT/RIGHT so fold lines are on left/right edges
   ─────────────────────────────────────────────────────────────── */
   else if(s==='cylinder'){
-    const r=mm(gv('r')),h=mm(gv('h')),circ=2*PI*r;
-    const colW=Math.max(circ,r*2), cx=PAD+colW/2, rX=cx-circ/2;
-    const c1y=PAD+r, rectY=c1y+r, c2y=rectY+h+r;
-    W=PAD*2+colW; H=c2y+r+PAD+20;
+    const r=mm(gv('r')), h=mm(gv('h')), circ=2*PI*r;
+    // Rectangle in center, circles on left and right
+    const rectX=PAD+r*2+4, rectY=PAD+Math.max(0,(r*2-circ)/2);
+    const cLeftX=PAD+r,  cY=rectY+circ/2;   // circle centers
+    const cRightX=rectX+h+r;
+    W=PAD*2 + r*2 + 4 + h + 4 + r*2;
+    H=PAD*2 + Math.max(circ, r*2) + 14;
 
-    // Circles (cut)
-    b+=`<circle cx="${cx}" cy="${c1y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
-    b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
-    // Rectangle sides (cut on left/right, fold top/bottom)
-    b+=C(`M${rX},${rectY}v${h}`);              // left side
-    b+=C(`M${rX+circ},${rectY}v${h}`);         // right side
-    b+=F(`M${rX},${rectY}h${circ}`);           // top fold (rect/top-circle)
-    b+=F(`M${rX},${rectY+h}h${circ}`);         // bottom fold (rect/bottom-circle)
+    // Rectangle (side face) — cut all 4 edges except left/right are fold
+    b+=C(`M${rectX},${rectY}h${h}v${circ}h${-h}Z`);
+    // Fold lines on left/right of rectangle (where circles attach)
+    b+=F(`M${rectX},${rectY}v${circ}`);
+    b+=F(`M${rectX+h},${rectY}v${circ}`);
 
-    // Tabs on rect left/right
-    b+=C(`M${rX},${rectY}L${rX-TAB},${rectY-TAB*.35}L${rX-TAB},${rectY+h+TAB*.35}L${rX},${rectY+h}`);
-    b+=C(`M${rX+circ},${rectY}L${rX+circ+TAB},${rectY-TAB*.35}L${rX+circ+TAB},${rectY+h+TAB*.35}L${rX+circ},${rectY+h}`);
+    // Tab on top of rectangle
+    b+=tabBevelRect(rectX,rectY,h,TAB,'up');
+    // Tab on bottom of rectangle
+    b+=tabBevelRect(rectX,rectY+circ,h,TAB,'down');
 
-    // Labels
-    b+=`<text x="${cx}" y="${c1y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Top</text>`;
-    b+=lbl(rX,rectY,circ,h,'Side');
-    b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Bottom</text>`;
+    // Left circle
+    b+=`<circle cx="${cLeftX}" cy="${cY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
+    // Right circle
+    b+=`<circle cx="${cRightX}" cy="${cY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
+
+    // Circle tabs (dashed scalloped outline — approximate with larger dashed circle)
+    const tabR=r+TAB;
+    b+=`<circle cx="${cLeftX}" cy="${cY}" r="${tabR}" fill="none" stroke="#555" stroke-width="${TW}" stroke-dasharray="3,2"/>`;
+    b+=`<circle cx="${cRightX}" cy="${cY}" r="${tabR}" fill="none" stroke="#555" stroke-width="${TW}" stroke-dasharray="3,2"/>`;
+
+    b+=lbl(rectX,rectY,h,circ,'Side');
+    b+=`<text x="${cLeftX}" y="${cY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#bbb">Top</text>`;
+    b+=`<text x="${cRightX}" y="${cY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#bbb">Bottom</text>`;
   }
 
-  /* ── SQUARE PYRAMID ────────────────────────────────────────────
-     Square base in center. Four triangles radiate outward.
-     Base edges = fold. Slant edges = cut. One tab per slant edge pair.
+  /* ── SQUARE PYRAMID ───────────────────────────────────────────
+     Reference PDF layout (page 6):
+     Square base in center
+     Triangles on all 4 sides (top, bottom, left, right)
+     Tabs on ONE slant edge per triangle (alternating sides)
+     This gives a clean star with tabs on alternating edges only
   ─────────────────────────────────────────────────────────────── */
   else if(s==='sq-pyramid'){
-    const a=mm(gv('a')),h=mm(gv('h'));
+    const a=mm(gv('a')), h=mm(gv('h'));
     const sl=Math.sqrt(h*h+(a/2)*(a/2));
     const bx=PAD+sl, by=PAD+sl;
-    W=PAD*2+sl+a+sl; H=PAD*2+sl+a+sl+20;
+    W=PAD*2+sl+a+sl; H=PAD*2+sl+a+sl+14;
 
-    // Base edges = fold
+    // Base — all 4 edges are fold lines
     b+=F(`M${bx},${by}h${a}v${a}h${-a}Z`);
     b+=lbl(bx,by,a,a,'Base');
 
-    // Each triangular face: apex at tip, base on square edge (fold)
-    // Slant edges get cut lines + one tab each
-    const pyrTri=(ax,ay,bx2,by2,apx,apy,tabSide)=>{
-      // ax,ay = left base corner; bx2,by2 = right base corner; apx,apy = apex
-      b+=C(`M${ax},${ay}L${apx},${apy}L${bx2},${by2}`); // two slant edges (cut)
-      // Tabs on each slant edge, sitting outside the triangle
-      b+=C(tabEdge(ax,ay,apx,apy,tabSide));
-      b+=C(tabEdge(bx2,by2,apx,apy,-tabSide));
+    // Helper: draw one triangular face with cut slant edges + ONE tab on one slant
+    const pyrFace=(ax,ay,bx2,by2,apx,apy,tabOnLeft)=>{
+      b+=C(`M${ax},${ay}L${apx},${apy}`);   // left slant = cut
+      b+=C(`M${bx2},${by2}L${apx},${apy}`); // right slant = cut
+      // Tab on ONE slant edge only (alternating per PDF reference)
+      if(tabOnLeft) b+=tabSlant(ax,ay,apx,apy,1);
+      else          b+=tabSlant(bx2,by2,apx,apy,-1);
       b+=triLbl(ax,ay,bx2,by2,apx,apy,'Face');
     };
 
-    pyrTri(bx,by+a, bx+a,by+a, bx+a/2,by+a+sl, -1); // front (below base)
-    pyrTri(bx,by,   bx+a,by,   bx+a/2,by-sl,    1);  // back (above base)
-    pyrTri(bx,by,   bx,by+a,   bx-sl,by+a/2,    -1); // left
-    pyrTri(bx+a,by, bx+a,by+a, bx+a+sl,by+a/2,  1);  // right
+    // Top face (above base) — tab on left slant
+    pyrFace(bx,by, bx+a,by, bx+a/2,by-sl, true);
+    // Bottom face — tab on right slant
+    pyrFace(bx,by+a, bx+a,by+a, bx+a/2,by+a+sl, false);
+    // Left face — tab on left slant (which points upward)
+    pyrFace(bx,by, bx,by+a, bx-sl,by+a/2, true);
+    // Right face — tab on right
+    pyrFace(bx+a,by, bx+a,by+a, bx+a+sl,by+a/2, false);
   }
 
-  /* ── TRIANGULAR PRISM ──────────────────────────────────────────
-     Three rectangles in a row. Triangle end caps on top/bottom of middle face.
-     Vertical shared edges = fold. Triangle base edges = fold.
-     Outer horizontal rect edges + slant triangle edges = cut + tabs.
+  /* ── TRIANGULAR PRISM ─────────────────────────────────────────
+     Reference PDF layout (page 3):
+     One rectangle on TOP (face 1)
+     Below that, the center rectangle (face 2) with triangles on LEFT and RIGHT
+     Another rectangle on BOTTOM (face 3)
+     Tab on top of face 1 only, tabs on outer edges of triangles
   ─────────────────────────────────────────────────────────────── */
   else if(s==='tri-prism'){
-    const a=mm(gv('a')),ht=mm(gv('ht')),h=mm(gv('h'));
-    const rowY=PAD+ht;
-    W=PAD*2+3*a; H=PAD*2+ht+h+ht+20;
+    const a=mm(gv('a')), ht=mm(gv('ht')), h=mm(gv('h'));
+    // Layout: vertical stack of 3 rectangles (all width=a, height=h)
+    // Triangles on LEFT and RIGHT sides of the MIDDLE rectangle
+    const colX=PAD+ht;
+    const rect1Y=PAD;
+    const rect2Y=PAD+h;
+    const rect3Y=PAD+2*h;
+    W=PAD*2+ht+a+ht;
+    H=PAD*2+3*h+14;
 
-    // Three rectangles
-    b+=C(`M${PAD},${rowY}h${a}v${h}h${-a}Z`);
-    b+=C(`M${PAD+a},${rowY}h${a}v${h}h${-a}Z`);
-    b+=C(`M${PAD+2*a},${rowY}h${a}v${h}h${-a}Z`);
+    // Three rectangles (cut)
+    b+=C(`M${colX},${rect1Y}h${a}v${h}h${-a}Z`);
+    b+=C(`M${colX},${rect2Y}h${a}v${h}h${-a}Z`);
+    b+=C(`M${colX},${rect3Y}h${a}v${h}h${-a}Z`);
 
-    // Fold: vertical shared edges
-    b+=F(`M${PAD+a},${rowY}v${h}`);
-    b+=F(`M${PAD+2*a},${rowY}v${h}`);
-    // Fold: Face2 top/bottom shared with triangles
-    b+=F(`M${PAD+a},${rowY}h${a}`);
-    b+=F(`M${PAD+a},${rowY+h}h${a}`);
+    // Fold lines: shared horizontal edges between rectangles
+    b+=F(`M${colX},${rect2Y}h${a}`);    // Face1/Face2
+    b+=F(`M${colX},${rect3Y}h${a}`);    // Face2/Face3
 
-    // Tabs on Face1 left, top, bottom
-    b+=C(`M${PAD},${rowY}L${PAD-TAB},${rowY-TAB*.35}L${PAD-TAB},${rowY+h+TAB*.35}L${PAD},${rowY+h}`);
-    b+=C(`M${PAD},${rowY}L${PAD-TAB*.35},${rowY-TAB}L${PAD+a+TAB*.35},${rowY-TAB}L${PAD+a},${rowY}`);
-    b+=C(`M${PAD},${rowY+h}L${PAD-TAB*.35},${rowY+h+TAB}L${PAD+a+TAB*.35},${rowY+h+TAB}L${PAD+a},${rowY+h}`);
+    // Triangles on LEFT and RIGHT of middle rectangle (face 2)
+    // Left triangle: apex points left, base is left edge of rect2
+    const triMidY = rect2Y + h/2;
+    const lApx = PAD, lApy = triMidY;    // left apex
+    const rApx = colX+a+ht, rApy = triMidY; // right apex
 
-    // Tabs on Face3 right, top, bottom
-    b+=C(`M${PAD+3*a},${rowY}L${PAD+3*a+TAB},${rowY-TAB*.35}L${PAD+3*a+TAB},${rowY+h+TAB*.35}L${PAD+3*a},${rowY+h}`);
-    b+=C(`M${PAD+2*a},${rowY}L${PAD+2*a-TAB*.35},${rowY-TAB}L${PAD+3*a+TAB*.35},${rowY-TAB}L${PAD+3*a},${rowY}`);
-    b+=C(`M${PAD+2*a},${rowY+h}L${PAD+2*a-TAB*.35},${rowY+h+TAB}L${PAD+3*a+TAB*.35},${rowY+h+TAB}L${PAD+3*a},${rowY+h}`);
+    // Left triangle: points (colX, rect2Y), (colX, rect2Y+h), (lApx, lApy)
+    b+=C(`M${colX},${rect2Y}L${lApx},${lApy}L${colX},${rect2Y+h}`);
+    // Fold: base of left triangle = left edge of rect2
+    b+=F(`M${colX},${rect2Y}v${h}`);
+    // Tab on top slant of left triangle
+    b+=tabSlant(colX,rect2Y,lApx,lApy,-1);
+    // Tab on bottom slant of left triangle
+    b+=tabSlant(colX,rect2Y+h,lApx,lApy,1);
 
-    // Top triangle (above Face2): slant edges are cut, base is fold (already drawn)
-    const tx1=PAD+a,tx2=PAD+2*a,tx3=PAD+1.5*a,ty1=rowY,ty3=PAD;
-    b+=C(`M${tx1},${ty1}L${tx3},${ty3}L${tx2},${ty1}`); // two slant edges
-    b+=C(tabEdge(tx1,ty1,tx3,ty3,1));
-    b+=C(tabEdge(tx2,ty1,tx3,ty3,-1));
-    b+=triLbl(tx1,ty1,tx2,ty1,tx3,ty3,'End');
+    // Right triangle
+    b+=C(`M${colX+a},${rect2Y}L${rApx},${rApy}L${colX+a},${rect2Y+h}`);
+    b+=F(`M${colX+a},${rect2Y}v${h}`);
+    b+=tabSlant(colX+a,rect2Y,rApx,rApy,1);
+    b+=tabSlant(colX+a,rect2Y+h,rApx,rApy,-1);
 
-    // Bottom triangle
-    const bx1=PAD+a,bx2=PAD+2*a,bx3=PAD+1.5*a,by1=rowY+h,by3=rowY+h+ht;
-    b+=C(`M${bx1},${by1}L${bx3},${by3}L${bx2},${by1}`);
-    b+=C(tabEdge(bx1,by1,bx3,by3,-1));
-    b+=C(tabEdge(bx2,by1,bx3,by3,1));
-    b+=triLbl(bx1,by1,bx2,by1,bx3,by3,'End');
+    // Tabs on outer edges of the three rectangles
+    b+=tabBevelRect(colX,rect1Y,a,TAB,'up');        // top of rect1
+    b+=tabBevelRect(colX,rect1Y,h,TAB,'left');       // left of rect1
+    b+=tabBevelRect(colX+a,rect1Y,h,TAB,'right');    // right of rect1
+    b+=tabBevelRect(colX,rect3Y+h,a,TAB,'down');     // bottom of rect3
+    b+=tabBevelRect(colX,rect3Y,h,TAB,'left');       // left of rect3
+    b+=tabBevelRect(colX+a,rect3Y,h,TAB,'right');    // right of rect3
 
-    // Face labels
-    b+=lbl(PAD,rowY,a,h,'Face 1');
-    b+=lbl(PAD+a,rowY,a,h,'Face 2');
-    b+=lbl(PAD+2*a,rowY,a,h,'Face 3');
+    b+=lbl(colX,rect1Y,a,h,'Face 1');
+    b+=lbl(colX,rect2Y,a,h,'Face 2');
+    b+=lbl(colX,rect3Y,a,h,'Face 3');
+    b+=triLbl(colX,rect2Y,colX,rect2Y+h,lApx,lApy,'End');
+    b+=triLbl(colX+a,rect2Y,colX+a,rect2Y+h,rApx,rApy,'End');
   }
 
   /* ── CONE ──────────────────────────────────────────────────────
-     Sector (lateral face) + circle (base). One straight edge gets a tab.
+     Sector (lateral face) + circle below it.
+     Tab on one straight edge of sector.
   ─────────────────────────────────────────────────────────────── */
   else if(s==='cone'){
-    const r=mm(gv('r')),h=mm(gv('h'));
+    const r=mm(gv('r')), h=mm(gv('h'));
     const sl=Math.sqrt(r*r+h*h), arc=2*PI*(r/sl);
     const cx=PAD+sl, cy=PAD+sl;
     const x1=cx+sl*Math.sin(-arc/2), y1=cy-sl*Math.cos(arc/2);
     const x2=cx+sl*Math.sin(arc/2),  y2=cy-sl*Math.cos(arc/2);
     const la=arc>PI?1:0;
-    const c2y=cy+sl+12+r;
-    W=PAD*2+sl*2; H=c2y+r+PAD+20;
+    const c2y=cy+sl+10+r;
+    W=PAD*2+sl*2; H=c2y+r+PAD+14;
 
-    // Sector: arc (cut) + two straight edges (one cut, one gets tab)
-    b+=C(`M${x1},${y1}A${sl},${sl} 0 ${la},1 ${x2},${y2}`); // arc
-    b+=C(`M${cx},${cy}L${x2},${y2}`);                         // right straight (cut, no tab)
-    b+=C(`M${cx},${cy}L${x1},${y1}`);                         // left straight (cut)
-    b+=C(tabEdge(cx,cy,x1,y1,1));                             // tab on left straight edge
-    b+=`<text x="${cx}" y="${cy-sl*.3}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Lateral face</text>`;
+    // Sector
+    b+=C(`M${cx},${cy}L${x2},${y2}A${sl},${sl} 0 ${la},1 ${x1},${y1}Z`);
+    // Tab on one straight edge
+    b+=tabSlant(cx,cy,x2,y2,-1);
+    b+=`<text x="${cx}" y="${cy-sl*.32}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#bbb">Lateral face</text>`;
 
-    // Base circle (cut)
-    b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
-    b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Base</text>`;
+    // Base circle
+    b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
+    // Tab ring around base
+    b+=`<circle cx="${cx}" cy="${c2y}" r="${r+TAB}" fill="none" stroke="#555" stroke-width="${TW}" stroke-dasharray="2.5,1.5"/>`;
+    b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#bbb">Base</text>`;
   }
 
   b+=sbar(W,H);

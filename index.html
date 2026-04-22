@@ -7,77 +7,72 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #ffffff; --bg2: #f7f6f3; --bg3: #eeece8;
-      --tx: #1a1a1a; --tx2: #666; --tx3: #aaa;
-      --br: rgba(0,0,0,0.12); --br2: rgba(0,0,0,0.22);
-      --r: 8px; --rl: 12px;
-      --warn-bg: #faeeda; --warn-tx: #633806;
-      --ok-bg: #eaf3de; --ok-tx: #27500a;
+      --bg:#fff; --bg2:#f7f6f3; --bg3:#eeece8;
+      --tx:#1a1a1a; --tx2:#666; --tx3:#aaa;
+      --br:rgba(0,0,0,0.12); --br2:rgba(0,0,0,0.22);
+      --r:8px; --rl:12px;
+      --warn-bg:#faeeda; --warn-tx:#633806;
+      --ok-bg:#eaf3de;   --ok-tx:#27500a;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
-        --tx: #f0f0f0; --tx2: #aaa; --tx3: #555;
-        --br: rgba(255,255,255,0.12); --br2: rgba(255,255,255,0.22);
-        --warn-bg: #412402; --warn-tx: #fac775;
-        --ok-bg: #173404; --ok-tx: #c0dd97;
-      }
+    @media(prefers-color-scheme:dark){
+      :root{ --bg:#1c1c1e; --bg2:#2c2c2e; --bg3:#3a3a3c;
+             --tx:#f0f0f0; --tx2:#aaa; --tx3:#555;
+             --br:rgba(255,255,255,0.12); --br2:rgba(255,255,255,0.22);
+             --warn-bg:#412402; --warn-tx:#fac775;
+             --ok-bg:#173404;   --ok-tx:#c0dd97; }
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--tx); min-height: 100vh; display: flex; flex-direction: column; }
-    header { background: var(--bg); border-bottom: .5px solid var(--br); padding: 14px 24px; }
-    header h1 { font-size: 17px; font-weight: 600; }
-    header p { font-size: 13px; color: var(--tx2); margin-top: 2px; }
-    .app { display: grid; grid-template-columns: 250px 1fr; max-width: 1100px; width: 100%; margin: 24px auto; border-radius: var(--rl); border: .5px solid var(--br); overflow: hidden; background: var(--bg); min-height: 600px; }
-    .side { background: var(--bg2); padding: 18px; border-right: .5px solid var(--br); display: flex; flex-direction: column; gap: 13px; }
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label { font-size: 12px; color: var(--tx2); font-weight: 500; }
-    select, input[type=number] { width: 100%; font-size: 13px; padding: 7px 10px; border: .5px solid var(--br2); border-radius: var(--r); background: var(--bg); color: var(--tx); appearance: none; -webkit-appearance: none; }
-    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
-    input:focus, select:focus { outline: none; border-color: #378add; }
-    .sec { font-size: 11px; color: var(--tx3); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding-top: 8px; border-top: .5px solid var(--br); }
-    .vbadge { background: var(--bg); border: .5px solid var(--br2); border-radius: var(--r); padding: 10px 12px; }
-    .vbadge .vl { font-size: 11px; color: var(--tx2); margin-bottom: 2px; }
-    .vbadge .vv { font-size: 20px; font-weight: 600; }
-    .vbadge .vu { font-size: 12px; color: var(--tx2); }
-    .fit-badge { border-radius: var(--r); padding: 9px 12px; font-size: 12px; line-height: 1.5; }
-    .fit-badge.ok   { background: var(--ok-bg);   color: var(--ok-tx); }
-    .fit-badge.warn { background: var(--warn-bg); color: var(--warn-tx); }
-    .legend { display: flex; flex-direction: column; gap: 6px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--tx2); }
-    .legend-line { width: 28px; height: 0; }
-    .legend-line.cut  { border-top: 1.5px solid var(--tx); }
-    .legend-line.fold { border-top: 1.5px dashed var(--tx2); }
-    .legend-line.tab  { width: 28px; height: 10px; background: rgba(0,0,0,0.1); border: 1px solid var(--tx3); border-radius: 2px; }
-    .btns { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
-    button { width: 100%; font-size: 13px; padding: 9px 0; border-radius: var(--r); cursor: pointer; font-family: inherit; font-weight: 500; }
-    button:disabled { opacity: .35; cursor: not-allowed; }
-    .bp { background: var(--tx); color: var(--bg); border: none; }
-    .bp:not(:disabled):hover { opacity: .85; }
-    .main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 10px; overflow: auto; }
-    .ph { font-size: 13px; color: var(--tx3); text-align: center; line-height: 1.9; }
-    .hint { font-size: 11px; color: var(--tx3); text-align: center; }
-    svg.net { max-width: 100%; height: auto; color: var(--tx); border: .5px solid var(--br); border-radius: var(--r); }
-    @media print {
-      header, .side, .hint { display: none !important; }
-      body, .app { background: white !important; border: none !important; margin: 0 !important; display: block !important; }
-      .app { grid-template-columns: 1fr !important; border-radius: 0 !important; }
-      .main { padding: 0 !important; border: none !important; }
-      .ph { display: none !important; }
-      svg.net { border: none !important; border-radius: 0 !important; width: 100% !important; max-width: none !important; }
+    body{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg3); color:var(--tx); min-height:100vh; display:flex; flex-direction:column; }
+    header{ background:var(--bg); border-bottom:.5px solid var(--br); padding:14px 24px; }
+    header h1{ font-size:17px; font-weight:600; }
+    header p{ font-size:13px; color:var(--tx2); margin-top:2px; }
+    .app{ display:grid; grid-template-columns:250px 1fr; max-width:1100px; width:100%; margin:24px auto; border-radius:var(--rl); border:.5px solid var(--br); overflow:hidden; background:var(--bg); min-height:600px; }
+    .side{ background:var(--bg2); padding:18px; border-right:.5px solid var(--br); display:flex; flex-direction:column; gap:13px; }
+    .field{ display:flex; flex-direction:column; gap:5px; }
+    .field label{ font-size:12px; color:var(--tx2); font-weight:500; }
+    select,input[type=number]{ width:100%; font-size:13px; padding:7px 10px; border:.5px solid var(--br2); border-radius:var(--r); background:var(--bg); color:var(--tx); appearance:none; -webkit-appearance:none; }
+    select{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:28px; }
+    input:focus,select:focus{ outline:none; border-color:#378add; }
+    .sec{ font-size:11px; color:var(--tx3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding-top:8px; border-top:.5px solid var(--br); }
+    .vbadge{ background:var(--bg); border:.5px solid var(--br2); border-radius:var(--r); padding:10px 12px; }
+    .vbadge .vl{ font-size:11px; color:var(--tx2); margin-bottom:2px; }
+    .vbadge .vv{ font-size:20px; font-weight:600; }
+    .vbadge .vu{ font-size:12px; color:var(--tx2); }
+    .fit-badge{ border-radius:var(--r); padding:9px 12px; font-size:12px; line-height:1.5; }
+    .fit-badge.ok  { background:var(--ok-bg);   color:var(--ok-tx); }
+    .fit-badge.warn{ background:var(--warn-bg); color:var(--warn-tx); }
+    .legend{ display:flex; flex-direction:column; gap:6px; }
+    .legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--tx2); }
+    .leg-cut { width:28px; border-top:1.5px solid var(--tx); }
+    .leg-fold{ width:28px; border-top:1.5px dashed var(--tx2); }
+    .leg-tab { width:28px; height:10px; border:1.5px solid var(--tx); border-radius:1px; }
+    .btns{ margin-top:auto; display:flex; flex-direction:column; gap:8px; }
+    button{ width:100%; font-size:13px; padding:9px 0; border-radius:var(--r); cursor:pointer; font-family:inherit; font-weight:500; }
+    button:disabled{ opacity:.35; cursor:not-allowed; }
+    .bp{ background:var(--tx); color:var(--bg); border:none; }
+    .bp:not(:disabled):hover{ opacity:.85; }
+    .main{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:10px; overflow:auto; }
+    .ph{ font-size:13px; color:var(--tx3); text-align:center; line-height:1.9; }
+    .hint{ font-size:11px; color:var(--tx3); text-align:center; }
+    svg.net{ max-width:100%; height:auto; border:.5px solid var(--br); border-radius:var(--r); }
+    @media print{
+      header,.side,.hint{ display:none!important; }
+      body,.app{ background:#fff!important; border:none!important; margin:0!important; display:block!important; }
+      .app{ grid-template-columns:1fr!important; border-radius:0!important; }
+      .main{ padding:0!important; }
+      .ph{ display:none!important; }
+      svg.net{ border:none!important; border-radius:0!important; width:100%!important; max-width:none!important; }
     }
-    @media (max-width: 700px) {
-      .app { grid-template-columns: 1fr; margin: 0; border-radius: 0; border-left: none; border-right: none; }
-      .side { border-right: none; border-bottom: .5px solid var(--br); }
+    @media(max-width:700px){
+      .app{ grid-template-columns:1fr; margin:0; border-radius:0; border-left:none; border-right:none; }
+      .side{ border-right:none; border-bottom:.5px solid var(--br); }
     }
   </style>
 </head>
 <body>
-
 <header>
   <h1>3D Net Generator</h1>
-  <p>Enter dimensions &rarr; get a to-scale printable net sized for letter paper</p>
+  <p>Enter dimensions &rarr; printable net sized for letter paper</p>
 </header>
-
 <div class="app">
   <div class="side">
     <div class="field">
@@ -98,531 +93,393 @@
         <option value="mm">Millimeters (mm)</option>
       </select>
     </div>
-    <div id="df" style="display:none; flex-direction:column; gap:9px;">
+    <div id="df" style="display:none;flex-direction:column;gap:9px">
       <div class="sec">Dimensions</div>
     </div>
     <div id="vb" style="display:none" class="vbadge">
       <div class="vl">Volume</div>
-      <div><span class="vv" id="vv">—</span> <span class="vu" id="vu"></span></div>
+      <div><span class="vv" id="vv">—</span><span class="vu" id="vu"></span></div>
     </div>
-    <div id="fitbadge" style="display:none" class="fit-badge ok"></div>
-
-    <!-- Legend -->
-    <div class="sec" id="leg-sec" style="display:none">Line guide</div>
-    <div class="legend" id="legend" style="display:none">
-      <div class="legend-item"><div class="legend-line cut"></div> Cut</div>
-      <div class="legend-item"><div class="legend-line fold"></div> Fold</div>
-      <div class="legend-item"><div class="legend-line tab"></div> Glue tab</div>
+    <div id="fb" style="display:none" class="fit-badge ok"></div>
+    <div class="sec" id="ls" style="display:none">Line guide</div>
+    <div class="legend" id="lg" style="display:none">
+      <div class="legend-item"><div class="leg-cut"></div>Cut</div>
+      <div class="legend-item"><div class="leg-fold"></div>Fold</div>
+      <div class="legend-item"><div class="leg-tab"></div>Glue tab</div>
     </div>
-
     <div class="btns">
       <button class="bp" id="pb" disabled onclick="window.print()">Print net</button>
     </div>
   </div>
-
-  <div class="main" id="main">
+  <div class="main">
     <div class="ph" id="ph">Select a solid and enter<br>dimensions to generate your net.</div>
     <svg class="net" id="ns" style="display:none" xmlns="http://www.w3.org/2000/svg"></svg>
     <div class="hint" id="nh"></div>
   </div>
 </div>
-
 <script>
 const PI = Math.PI;
-const PRINT_W_MM = 190.5;  // letter paper minus 0.5" margins (7.5")
-const PRINT_H_MM = 254.0;  // letter paper minus 0.5" margins (10")
-const TAB = 5;             // glue tab depth in mm
-const PAD = 10;            // page margin in mm
+const PW = 190.5, PH = 254; // printable letter paper in mm (0.5" margins)
+const PAD = 10;              // SVG page margin mm
+const TAB = 5;               // glue tab depth mm
+const CW  = 0.5;             // cut stroke-width mm
+const FW  = 0.5;             // fold stroke-width mm
 
 const SOLIDS = {
-  'rect-prism': { label: 'Rectangular prism', dims: [{id:'l',label:'Length'},{id:'w',label:'Width'},{id:'h',label:'Height'}] },
-  'cylinder':   { label: 'Cylinder',           dims: [{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
-  'sq-pyramid': { label: 'Square pyramid',     dims: [{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
-  'tri-prism':  { label: 'Triangular prism',   dims: [{id:'a',label:'Triangle base'},{id:'ht',label:'Triangle height'},{id:'h',label:'Prism length'}] },
-  'cone':       { label: 'Cone',               dims: [{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
+  'rect-prism':{ label:'Rectangular prism', dims:[{id:'l',label:'Length'},{id:'w',label:'Width'},{id:'h',label:'Height'}] },
+  'cylinder':  { label:'Cylinder',           dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
+  'sq-pyramid':{ label:'Square pyramid',     dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'tri-prism': { label:'Triangular prism',   dims:[{id:'a',label:'Triangle base'},{id:'ht',label:'Triangle height'},{id:'h',label:'Prism length'}] },
+  'cone':      { label:'Cone',               dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
 };
 
-function gv(id) { const e=document.getElementById('d_'+id); if(!e)return null; const v=parseFloat(e.value); return(!e.value||isNaN(v)||v<=0)?null:v; }
-function uu() { return document.getElementById('unit').value; }
-function toMM(v) { return uu()==='cm' ? v*10 : v; }
-function fn(v,d) { return parseFloat(v.toPrecision(d||4)).toString(); }
-function fmtDim(v) { return fn(v) + ' ' + uu(); }
+function gv(id){ const e=document.getElementById('d_'+id); if(!e)return null; const v=parseFloat(e.value); return(!e.value||isNaN(v)||v<=0)?null:v; }
+function uu(){ return document.getElementById('unit').value; }
+function mm(v){ return uu()==='cm'?v*10:v; }
+function fmt(v,d){ return parseFloat(v.toPrecision(d||4)).toString(); }
+function fdim(v){ return fmt(v)+' '+uu(); }
 
-function calcVol(s) {
+function vol(s){
   if(s==='rect-prism'){const l=gv('l'),w=gv('w'),h=gv('h');return(l&&w&&h)?l*w*h:null;}
-  if(s==='cylinder'){const r=gv('r'),h=gv('h');return(r&&h)?PI*r*r*h:null;}
+  if(s==='cylinder')  {const r=gv('r'),h=gv('h');return(r&&h)?PI*r*r*h:null;}
   if(s==='sq-pyramid'){const a=gv('a'),h=gv('h');return(a&&h)?(1/3)*a*a*h:null;}
-  if(s==='tri-prism'){const a=gv('a'),ht=gv('ht'),h=gv('h');return(a&&ht&&h)?.5*a*ht*h:null;}
-  if(s==='cone'){const r=gv('r'),h=gv('h');return(r&&h)?(1/3)*PI*r*r*h:null;}
+  if(s==='tri-prism') {const a=gv('a'),ht=gv('ht'),h=gv('h');return(a&&ht&&h)?.5*a*ht*h:null;}
+  if(s==='cone')      {const r=gv('r'),h=gv('h');return(r&&h)?(1/3)*PI*r*r*h:null;}
 }
 
-function onSolid() {
+function onSolid(){
   const s=document.getElementById('solid').value;
   const df=document.getElementById('df');
-  if(!s){df.style.display='none';clearNet();return;}
+  if(!s){df.style.display='none';clear();return;}
   df.style.display='flex';
   df.innerHTML='<div class="sec">Dimensions</div>'+
     SOLIDS[s].dims.map(d=>`<div class="field"><label>${d.label}</label><input type="number" id="d_${d.id}" min="0.1" step="any" placeholder="e.g. ${uu()==='cm'?'5':'50'}" oninput="rebuild()"></div>`).join('');
-  clearNet();
+  clear();
 }
-
-function clearNet() {
-  document.getElementById('vb').style.display='none';
-  document.getElementById('fitbadge').style.display='none';
-  document.getElementById('ns').style.display='none';
+function clear(){
+  ['vb','fb','ns'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('ph').style.display='block';
   document.getElementById('nh').textContent='';
   document.getElementById('pb').disabled=true;
-  document.getElementById('leg-sec').style.display='none';
-  document.getElementById('legend').style.display='none';
+  document.getElementById('ls').style.display='none';
+  document.getElementById('lg').style.display='none';
 }
-
-function rebuild() {
-  const s=document.getElementById('solid').value;
-  if(!s)return;
-  const vol=calcVol(s);
-  const u2=uu();
+function rebuild(){
+  const s=document.getElementById('solid').value; if(!s)return;
+  const v=vol(s), u=uu();
   document.getElementById('vb').style.display='block';
-  document.getElementById('vv').textContent=vol?fn(vol):'—';
-  document.getElementById('vu').textContent=vol?u2+'³':'';
-  const allFilled=SOLIDS[s].dims.every(d=>gv(d.id)!==null);
-  if(!allFilled){clearNet();return;}
+  document.getElementById('vv').textContent=v?fmt(v):'—';
+  document.getElementById('vu').textContent=v?' '+u+'³':'';
+  if(!SOLIDS[s].dims.every(d=>gv(d.id)!==null)){clear();return;}
 
-  const net=buildNetMM(s);
-  if(!net)return;
-
-  const scaleX=PRINT_W_MM/net.W, scaleY=PRINT_H_MM/net.H;
-  const scale=Math.min(1,scaleX,scaleY);
-  const fits=scale>=1;
-  const finalW=(net.W*scale).toFixed(2);
-  const finalH=(net.H*scale).toFixed(2);
-
+  const net=buildNet(s); if(!net)return;
+  const sc=Math.min(1,PW/net.W,PH/net.H), fits=sc>=1;
   const svg=document.getElementById('ns');
   svg.setAttribute('viewBox',`0 0 ${net.W} ${net.H}`);
-  svg.setAttribute('width', finalW+'mm');
-  svg.setAttribute('height', finalH+'mm');
-  svg.innerHTML = net.body;
+  svg.setAttribute('width',(net.W*sc).toFixed(2)+'mm');
+  svg.setAttribute('height',(net.H*sc).toFixed(2)+'mm');
+  svg.innerHTML=net.body;
   svg.style.display='block';
   document.getElementById('ph').style.display='none';
   document.getElementById('pb').disabled=false;
-  document.getElementById('leg-sec').style.display='block';
-  document.getElementById('legend').style.display='flex';
+  document.getElementById('ls').style.display='block';
+  document.getElementById('lg').style.display='flex';
 
-  const fb=document.getElementById('fitbadge');
+  const fb=document.getElementById('fb');
   fb.style.display='block';
-  if(fits){
-    fb.className='fit-badge ok';
-    fb.textContent=`Fits on letter paper at full scale (${fn(net.W,4)} × ${fn(net.H,4)} mm).`;
-  } else {
-    const pct=Math.round(scale*100);
-    fb.className='fit-badge warn';
-    fb.textContent=`Too large for letter paper — scaled to ${pct}% to fit. Reduce dimensions or print at ${pct}% scale.`;
-  }
+  if(fits){ fb.className='fit-badge ok';   fb.textContent=`Fits on letter paper at full scale (${fmt(net.W,4)} × ${fmt(net.H,4)} mm).`; }
+  else    { fb.className='fit-badge warn'; fb.textContent=`Too large — scaled to ${Math.round(sc*100)}% to fit. Reduce dimensions or print at ${Math.round(sc*100)}% scale.`; }
   document.getElementById('nh').textContent='Print at 100% — disable "fit to page" in your print dialog.';
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════
    SVG PRIMITIVES
-   cut()  = solid line (outer edges, always cut)
-   fold() = dashed line (internal shared edge, always fold)
-   tab()  = clean filled trapezoid (glue area)
-══════════════════════════════════════════════════════════ */
-
-const CUT_W  = 0.5;   // stroke-width in mm
-const FOLD_W = 0.5;
-const FOLD_DASH = '2,1.5';
-const TAB_FILL  = '#b4b2a9';  // neutral gray fill for tabs
-const TAB_OPACITY = 0.35;
-
-function cut(d)  { return `<path d="${d}" fill="none" stroke="#1a1a1a" stroke-width="${CUT_W}" stroke-linecap="round" stroke-linejoin="round"/>`; }
-function fold(d) { return `<path d="${d}" fill="none" stroke="#888780" stroke-width="${FOLD_W}" stroke-dasharray="${FOLD_DASH}" stroke-linecap="round"/>`; }
-function tab(d)  { return `<path d="${d}" fill="${TAB_FILL}" fill-opacity="${TAB_OPACITY}" stroke="none"/>`; }
-
-// Rectangle: returns {cut, fold} paths — outer edges as cut, shared inner edges caller must handle
-function faceRect(x,y,w,h) {
-  return `M${x},${y}h${w}v${h}h${-w}Z`;
+══════════════════════════════════════════ */
+// Solid cut line
+function C(d){ return `<path d="${d}" fill="none" stroke="#1a1a1a" stroke-width="${CW}" stroke-linecap="round" stroke-linejoin="round"/>`; }
+// Dashed fold line
+function F(d){ return `<path d="${d}" fill="none" stroke="#888" stroke-width="${FW}" stroke-dasharray="2,1.5" stroke-linecap="round"/>`; }
+// Glue tab — outline only, NO fill, NO shading. Sits OUTSIDE the face edge.
+// Returns cut-path string for the three outer sides of the trapezoid.
+// The inner edge is the face edge itself (already drawn as cut or fold).
+function tabRect(x,y,w,side){
+  // side: 'top','bottom','left','right'
+  const s=TAB*.35;
+  if(side==='top')   return `M${x},${y}L${x-s},${y-TAB}L${x+w+s},${y-TAB}L${x+w},${y}`;
+  if(side==='bottom')return `M${x},${y}L${x-s},${y+TAB}L${x+w+s},${y+TAB}L${x+w},${y}`;
+  if(side==='left')  return `M${x},${y}L${x-TAB},${y-s}L${x-TAB},${y+w+s}L${x},${y+w}`;
+  if(side==='right') return `M${x},${y}L${x+TAB},${y-s}L${x+TAB},${y+w+s}L${x},${y+w}`;
 }
-
-// Straight line path
-function line(x1,y1,x2,y2) { return `M${x1},${y1}L${x2},${y2}`; }
-
-// Tab shapes (trapezoid, depth = TAB mm)
-function tabTop(x,y,w)    { const s=TAB*.35; return `M${x+s},${y}L${x+w-s},${y}L${x+w},${y-TAB}L${x},${y-TAB}Z`; }
-function tabBottom(x,y,w) { const s=TAB*.35; return `M${x+s},${y}L${x+w-s},${y}L${x+w},${y+TAB}L${x},${y+TAB}Z`; }
-function tabLeft(x,y,h)   { const s=TAB*.35; return `M${x},${y+s}L${x},${y+h-s}L${x-TAB},${y+h}L${x-TAB},${y}Z`; }
-function tabRight(x,y,h)  { const s=TAB*.35; return `M${x},${y+s}L${x},${y+h-s}L${x+TAB},${y+h}L${x+TAB},${y}Z`; }
-function tabEdge(x1,y1,x2,y2,side) {
+// Tab along an arbitrary edge (for triangular faces) — outward only
+function tabEdge(x1,y1,x2,y2,side){
   const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
   const nx=-dy/len*TAB*side, ny=dx/len*TAB*side;
-  const s=TAB*.3, ex=dx/len*s, ey=dy/len*s;
-  return `M${x1},${y1}L${x2},${y2}L${x2-ex+nx},${y2-ey+ny}L${x1+ex+nx},${y1+ey+ny}Z`;
+  const shrink=TAB*.3, ex=dx/len*shrink, ey=dy/len*shrink;
+  // Trapezoid: from (x1,y1)→(x2,y2) on face edge, offset corners shrunk inward
+  return `M${x1},${y1}L${x1+ex+nx},${y1+ey+ny}L${x2-ex+nx},${y2-ey+ny}L${x2},${y2}`;
 }
 
-// Dimension annotation
-function dim(x1,y1,x2,y2,lbl,offX,offY) {
-  const fs=3.2;
-  const mx=(x1+x2)/2+offX, my=(y1+y2)/2+offY;
-  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#888" stroke-width="0.25" opacity="0.6"/>
-    <text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#555" opacity="0.9">${lbl}</text>`;
+// Face label (light gray, centered)
+function lbl(x,y,w,h,t){
+  const fs=Math.max(2.5,Math.min(5,w/5,h/3));
+  return `<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#aaa">${t}</text>`;
+}
+function triLbl(ax,ay,bx,by,cx2,cy2,t){
+  const fs=3.5;
+  return `<text x="${(ax+bx+cx2)/3}" y="${(ay+by+cy2)/3}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#aaa">${t}</text>`;
 }
 
-// Face label
-function faceLabel(x,y,w,h,lbl) {
-  if(!lbl)return'';
-  const fs=Math.max(2.5,Math.min(4.5,w/5,h/3));
-  return `<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-family="sans-serif" fill="#888" opacity="0.7">${lbl}</text>`;
-}
-
-function triLabel(pts,lbl) {
-  if(!lbl)return'';
-  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3, cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
-  return `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#888" opacity="0.7">${lbl}</text>`;
-}
-
-/* ── Info key ─────────────────────────────────────────────
-   Printed in bottom-right corner of the net area.
-   White box with rounded corners, solid outline.
-*/
-function infoKey(s, netW, netH) {
-  const u2=uu();
-  const vol=calcVol(s);
-  const info=SOLIDS[s];
-  const lines=[];
-  lines.push({ bold:true, text: info.label });
-  info.dims.forEach(d=>{
-    const v=gv(d.id);
-    if(v) lines.push({ bold:false, text:`${d.label}: ${fn(v)} ${u2}` });
-  });
-  if(vol) lines.push({ bold:false, text:`Volume: ${fn(vol)} ${u2}³` });
-
-  const fs=3.5, lh=5.5, bpad=4;
-  const boxW=42, boxH=lines.length*lh+bpad*2;
-  const bx=netW-PAD-boxW, by=netH-PAD-boxH-20; // above scale bar
-
-  let g=`<g>`;
-  g+=`<rect x="${bx}" y="${by}" width="${boxW}" height="${boxH}" fill="white" fill-opacity="0.95" stroke="#1a1a1a" stroke-width="0.4" rx="1"/>`;
-  lines.forEach((ln,i)=>{
-    const fw=ln.bold?'600':'400';
-    g+=`<text x="${bx+bpad}" y="${by+bpad+i*lh+fs*.9}" font-size="${fs}" font-family="sans-serif" font-weight="${fw}" fill="#1a1a1a">${ln.text}</text>`;
-  });
-  g+=`</g>`;
+/* ── Info key ── */
+function key(s,W,H){
+  const u=uu(), v=vol(s), info=SOLIDS[s];
+  const lines=[{b:true,t:info.label}];
+  info.dims.forEach(d=>{const val=gv(d.id); if(val)lines.push({b:false,t:`${d.label}: ${fmt(val)} ${u}`});});
+  if(v) lines.push({b:false,t:`Volume: ${fmt(v)} ${u}\u00b3`});
+  const fs=3.5,lh=5.5,bp=4,bw=45,bh=lines.length*lh+bp*2;
+  const kx=W-PAD-bw, ky=H-PAD-bh-16;
+  let g=`<rect x="${kx}" y="${ky}" width="${bw}" height="${bh}" fill="white" fill-opacity="0.97" stroke="#1a1a1a" stroke-width="0.4" rx="1.5"/>`;
+  lines.forEach((ln,i)=>{ g+=`<text x="${kx+bp}" y="${ky+bp+i*lh+fs*.85}" font-size="${fs}" font-family="sans-serif" font-weight="${ln.b?600:400}" fill="#1a1a1a">${ln.t}</text>`; });
   return g;
 }
 
-/* ── Scale bar ─────────────────────────────────────────── */
-function scaleBar(netW, netH) {
-  const barLen=10, x=PAD, y=netH-PAD-4, fs=3;
-  return `<g>
-    <line x1="${x}" y1="${y}" x2="${x+barLen}" y2="${y}" stroke="#1a1a1a" stroke-width="0.5"/>
-    <line x1="${x}" y1="${y-2.5}" x2="${x}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>
-    <line x1="${x+barLen}" y1="${y-2.5}" x2="${x+barLen}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>
-    <text x="${x+barLen/2}" y="${y-3.5}" text-anchor="middle" font-size="${fs}" font-family="sans-serif" fill="#555">10 mm</text>
-  </g>`;
+/* ── Scale bar ── */
+function sbar(W,H){
+  const x=PAD,y=H-PAD-3;
+  return `<line x1="${x}" y1="${y}" x2="${x+10}" y2="${y}" stroke="#1a1a1a" stroke-width="0.5"/>` +
+    `<line x1="${x}" y1="${y-2.5}" x2="${x}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>` +
+    `<line x1="${x+10}" y1="${y-2.5}" x2="${x+10}" y2="${y+2.5}" stroke="#1a1a1a" stroke-width="0.5"/>` +
+    `<text x="${x+5}" y="${y-4}" text-anchor="middle" font-size="3" font-family="sans-serif" fill="#555">10 mm</text>`;
 }
 
-/* ══════════════════════════════════════════════════════════
-   NET BUILDERS — each returns {body, W, H}
-   Cut/fold logic:
-   - Outer perimeter = cut (solid)
-   - Shared edges between faces = fold (dashed)
-   - Tab outlines = cut (solid) but tab fill is just fill, no stroke
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   NET BUILDERS
+   Rules:
+   - Cut line  = outer boundary of each face + outer edges of tabs
+   - Fold line = shared edge between two adjacent faces
+   - Tabs      = trapezoid outline only, no fill, always OUTSIDE face boundary
+   - No dimension lines on the net — info lives in the key box
+══════════════════════════════════════════ */
+function buildNet(s){
+  let b='',W=0,H=0;
 
-function buildNetMM(s) {
-  let body='', W=0, H=0;
+  /* ── RECTANGULAR PRISM ─────────────────────────────────────────
+     Cross layout (viewed from above):
+           [Top]
+     [Left][Front][Right]
+           [Bottom]
+           [Back]
+     Fold edges: Top/Front, Front/Left, Front/Right, Front/Bottom, Bottom/Back
+     Tabs on all remaining free outer edges.
+  ─────────────────────────────────────────────────────────────── */
+  if(s==='rect-prism'){
+    const l=mm(gv('l')),w=mm(gv('w')),h=mm(gv('h'));
+    const cx=PAD+h;
+    const yTop=PAD, yFront=PAD+w, yBot=PAD+w+h, yBack=PAD+w+2*h;
+    W=PAD*2+h+l+h; H=PAD*2+w+2*h+w+20;
 
-  if(s==='rect-prism') {
-    const l=toMM(gv('l')), w=toMM(gv('w')), h=toMM(gv('h'));
-    // Cross net layout:
-    //         [Top  l×w]
-    // [Left]  [Front l×h] [Right]
-    //         [Bottom l×w]
-    //         [Back l×h]
-    const cx=PAD+h, topY=PAD;
-    const frontY=topY+w, botY=frontY+h, backY=botY+w;
-    W=PAD*2+h+l+h; H=PAD*2+w+h+w+h+20;
+    // Draw faces as closed cut paths
+    // Top face
+    b+=C(`M${cx},${yTop}h${l}v${w}h${-l}Z`);
+    // Front face
+    b+=C(`M${cx},${yFront}h${l}v${h}h${-l}Z`);
+    // Bottom face
+    b+=C(`M${cx},${yBot}h${l}v${w}h${-l}Z`);
+    // Back face
+    b+=C(`M${cx},${yBack}h${l}v${h}h${-l}Z`);
+    // Left face
+    b+=C(`M${PAD},${yFront}h${h}v${h}h${-h}Z`);
+    // Right face
+    b+=C(`M${cx+l},${yFront}h${h}v${h}h${-h}Z`);
 
-    // ── Outer cut perimeter (single continuous path where possible) ──
-    // Top face outer (top, left, right edges only — bottom is fold shared with Front)
-    body+=cut(`M${cx},${topY}h${l}v${w}M${cx},${topY}v${w}M${cx},${topY}h${l}`); // top edge
-    body+=cut(line(cx,topY,cx,topY+w));        // top-left side
-    body+=cut(line(cx+l,topY,cx+l,topY+w));   // top-right side
-    body+=cut(line(cx,topY,cx+l,topY));        // top edge
+    // Fold lines (shared edges)
+    b+=F(`M${cx},${yFront}h${l}`);             // Top/Front
+    b+=F(`M${cx},${yFront}v${h}`);             // Front/Left
+    b+=F(`M${cx+l},${yFront}v${h}`);           // Front/Right
+    b+=F(`M${cx},${yBot}h${l}`);               // Front/Bottom
+    b+=F(`M${cx},${yBack}h${l}`);              // Bottom/Back
 
-    // Tabs on Top (3 free outer edges)
-    body+=tab(tabTop(cx,topY,l));
-    body+=tab(tabLeft(cx,topY,w));
-    body+=tab(tabRight(cx+l,topY,w));
-    // Cut outlines of those tabs
-    body+=cut(`M${cx},${topY}L${cx},${topY-TAB}L${cx+l},${topY-TAB}L${cx+l},${topY}`); // top tab
-    body+=cut(`M${cx},${topY}L${cx-TAB},${topY}L${cx-TAB},${topY+w}L${cx},${topY+w}`); // left tab on top
-    body+=cut(`M${cx+l},${topY}L${cx+l+TAB},${topY}L${cx+l+TAB},${topY+w}L${cx+l},${topY+w}`); // right tab on top
+    // Tabs — outer edges only, drawn as outlines sitting OUTSIDE each face
+    // Top face: top edge, left edge, right edge
+    b+=C(tabRect(cx,yTop,l,'top'));
+    b+=C(tabRect(yTop,cx,w,'left').replace(/L/g,'L')); // need vertical tab — use tabRect differently
 
-    // Fold: Top/Front shared edge
-    body+=fold(line(cx,frontY,cx+l,frontY));
+    // Rebuild tabRect to handle left/right on top face cleanly:
+    // Left side of Top: vertical edge at x=cx from y=yTop to y=yTop+w → tab goes LEFT
+    b+=C(`M${cx},${yTop}L${cx-TAB},${yTop-TAB*.35}L${cx-TAB},${yTop+w+TAB*.35}L${cx},${yTop+w}`);
+    // Right side of Top
+    b+=C(`M${cx+l},${yTop}L${cx+l+TAB},${yTop-TAB*.35}L${cx+l+TAB},${yTop+w+TAB*.35}L${cx+l},${yTop+w}`);
+    // Top edge of Top
+    b+=C(`M${cx},${yTop}L${cx-TAB*.35},${yTop-TAB}L${cx+l+TAB*.35},${yTop-TAB}L${cx+l},${yTop}`);
 
-    // Front face — no outer cuts on shared edges, only on Left/Right attachment sides
-    // Left/Right panels attach to Front on their shared vertical edges
-    // Left panel outer
-    body+=cut(line(PAD,frontY,PAD,frontY+h));       // left outer
-    body+=cut(line(PAD,frontY,cx,frontY));           // top of left
-    body+=cut(line(PAD,frontY+h,cx,frontY+h));      // bottom of left
-    body+=tab(tabLeft(PAD,frontY,h));
-    body+=cut(`M${PAD},${frontY}L${PAD-TAB},${frontY}L${PAD-TAB},${frontY+h}L${PAD},${frontY+h}`);
-    body+=tab(tabTop(PAD,frontY,h));
-    body+=cut(`M${PAD},${frontY}L${PAD},${frontY-TAB}L${cx},${frontY-TAB}L${cx},${frontY}`);
-    body+=tab(tabBottom(PAD,frontY+h,h));
-    body+=cut(`M${PAD},${frontY+h}L${PAD},${frontY+h+TAB}L${cx},${frontY+h+TAB}L${cx},${frontY+h}`);
-    // Fold: Front/Left shared vertical edge
-    body+=fold(line(cx,frontY,cx,frontY+h));
+    // Back face: bottom, left, right
+    b+=C(`M${cx},${yBack+h}L${cx-TAB*.35},${yBack+h+TAB}L${cx+l+TAB*.35},${yBack+h+TAB}L${cx+l},${yBack+h}`);
+    b+=C(`M${cx},${yBack}L${cx-TAB},${yBack-TAB*.35}L${cx-TAB},${yBack+h+TAB*.35}L${cx},${yBack+h}`);
+    b+=C(`M${cx+l},${yBack}L${cx+l+TAB},${yBack-TAB*.35}L${cx+l+TAB},${yBack+h+TAB*.35}L${cx+l},${yBack+h}`);
 
-    // Right panel outer
-    body+=cut(line(cx+l+h,frontY,cx+l+h,frontY+h));
-    body+=cut(line(cx+l,frontY,cx+l+h,frontY));
-    body+=cut(line(cx+l,frontY+h,cx+l+h,frontY+h));
-    body+=tab(tabRight(cx+l+h,frontY,h));
-    body+=cut(`M${cx+l+h},${frontY}L${cx+l+h+TAB},${frontY}L${cx+l+h+TAB},${frontY+h}L${cx+l+h},${frontY+h}`);
-    body+=tab(tabTop(cx+l,frontY,h));
-    body+=cut(`M${cx+l},${frontY}L${cx+l},${frontY-TAB}L${cx+l+h},${frontY-TAB}L${cx+l+h},${frontY}`);
-    body+=tab(tabBottom(cx+l,frontY+h,h));
-    body+=cut(`M${cx+l},${frontY+h}L${cx+l},${frontY+h+TAB}L${cx+l+h},${frontY+h+TAB}L${cx+l+h},${frontY+h}`);
-    // Fold: Front/Right shared vertical edge
-    body+=fold(line(cx+l,frontY,cx+l,frontY+h));
+    // Left face: top, bottom, left
+    b+=C(`M${PAD},${yFront}L${PAD-TAB*.35},${yFront-TAB}L${PAD+h+TAB*.35},${yFront-TAB}L${PAD+h},${yFront}`);
+    b+=C(`M${PAD},${yFront+h}L${PAD-TAB*.35},${yFront+h+TAB}L${PAD+h+TAB*.35},${yFront+h+TAB}L${PAD+h},${yFront+h}`);
+    b+=C(`M${PAD},${yFront}L${PAD-TAB},${yFront-TAB*.35}L${PAD-TAB},${yFront+h+TAB*.35}L${PAD},${yFront+h}`);
 
-    // Fold: Front/Bottom
-    body+=fold(line(cx,botY,cx+l,botY));
+    // Right face: top, bottom, right
+    b+=C(`M${cx+l},${yFront}L${cx+l-TAB*.35},${yFront-TAB}L${cx+l+h+TAB*.35},${yFront-TAB}L${cx+l+h},${yFront}`);
+    b+=C(`M${cx+l},${yFront+h}L${cx+l-TAB*.35},${yFront+h+TAB}L${cx+l+h+TAB*.35},${yFront+h+TAB}L${cx+l+h},${yFront+h}`);
+    b+=C(`M${cx+l+h},${yFront}L${cx+l+h+TAB},${yFront-TAB*.35}L${cx+l+h+TAB},${yFront+h+TAB*.35}L${cx+l+h},${yFront+h}`);
 
-    // Bottom outer (left, right, bottom edges)
-    body+=cut(line(cx,botY,cx,botY+w));
-    body+=cut(line(cx+l,botY,cx+l,botY+w));
-    body+=cut(line(cx,botY+w,cx+l,botY+w));
-    body+=tab(tabLeft(cx,botY,w));
-    body+=cut(`M${cx},${botY}L${cx-TAB},${botY}L${cx-TAB},${botY+w}L${cx},${botY+w}`);
-    body+=tab(tabRight(cx+l,botY,w));
-    body+=cut(`M${cx+l},${botY}L${cx+l+TAB},${botY}L${cx+l+TAB},${botY+w}L${cx+l},${botY+w}`);
-    body+=tab(tabBottom(cx,botY+w,l));
-    body+=cut(`M${cx},${botY+w}L${cx},${botY+w+TAB}L${cx+l},${botY+w+TAB}L${cx+l},${botY+w}`);
-
-    // Fold: Bottom/Back
-    body+=fold(line(cx,backY,cx+l,backY));
-
-    // Back outer (left, right, bottom edges)
-    body+=cut(line(cx,backY,cx,backY+h));
-    body+=cut(line(cx+l,backY,cx+l,backY+h));
-    body+=cut(line(cx,backY+h,cx+l,backY+h));
-    body+=tab(tabLeft(cx,backY,h));
-    body+=cut(`M${cx},${backY}L${cx-TAB},${backY}L${cx-TAB},${backY+h}L${cx},${backY+h}`);
-    body+=tab(tabRight(cx+l,backY,h));
-    body+=cut(`M${cx+l},${backY}L${cx+l+TAB},${backY}L${cx+l+TAB},${backY+h}L${cx+l},${backY+h}`);
-    body+=tab(tabBottom(cx,backY+h,l));
-    body+=cut(`M${cx},${backY+h}L${cx},${backY+h+TAB}L${cx+l},${backY+h+TAB}L${cx+l},${backY+h}`);
+    // Bottom face: left, right, bottom
+    b+=C(`M${cx},${yBot}L${cx-TAB},${yBot-TAB*.35}L${cx-TAB},${yBot+w+TAB*.35}L${cx},${yBot+w}`);
+    b+=C(`M${cx+l},${yBot}L${cx+l+TAB},${yBot-TAB*.35}L${cx+l+TAB},${yBot+w+TAB*.35}L${cx+l},${yBot+w}`);
+    b+=C(`M${cx},${yBot+w}L${cx-TAB*.35},${yBot+w+TAB}L${cx+l+TAB*.35},${yBot+w+TAB}L${cx+l},${yBot+w}`);
 
     // Face labels
-    body+=faceLabel(cx,topY,l,w,'Top');
-    body+=faceLabel(cx,frontY,l,h,'Front');
-    body+=faceLabel(cx,botY,l,w,'Bottom');
-    body+=faceLabel(cx,backY,l,h,'Back');
-    body+=faceLabel(PAD,frontY,h,h,'Left');
-    body+=faceLabel(cx+l,frontY,h,h,'Right');
-
-    // Dim lines
-    body+=dim(cx,topY-TAB-6,cx+l,topY-TAB-6,fmtDim(gv('l')),0,0);
-    body+=dim(cx+l+TAB+6,frontY,cx+l+TAB+6,frontY+h,fmtDim(gv('h')),0,0);
-    body+=dim(cx+l+TAB+6,topY,cx+l+TAB+6,topY+w,fmtDim(gv('w')),0,0);
+    b+=lbl(cx,yTop,l,w,'Top');
+    b+=lbl(cx,yFront,l,h,'Front');
+    b+=lbl(cx,yBot,l,w,'Bottom');
+    b+=lbl(cx,yBack,l,h,'Back');
+    b+=lbl(PAD,yFront,h,h,'Left');
+    b+=lbl(cx+l,yFront,h,h,'Right');
   }
 
-  else if(s==='cylinder') {
-    const r=toMM(gv('r')), h=toMM(gv('h'));
-    const circ=2*PI*r;
-    const colW=Math.max(circ,r*2);
-    const cx=PAD+colW/2, rX=cx-circ/2;
-    const c1y=PAD+r, rectY=PAD+r*2, c2y=rectY+h+r;
+  /* ── CYLINDER ──────────────────────────────────────────────────
+     Two circles + rectangle. Circles touch rectangle top/bottom (fold).
+     Tabs on left/right sides of rectangle only.
+  ─────────────────────────────────────────────────────────────── */
+  else if(s==='cylinder'){
+    const r=mm(gv('r')),h=mm(gv('h')),circ=2*PI*r;
+    const colW=Math.max(circ,r*2), cx=PAD+colW/2, rX=cx-circ/2;
+    const c1y=PAD+r, rectY=c1y+r, c2y=rectY+h+r;
     W=PAD*2+colW; H=c2y+r+PAD+20;
 
-    // Top circle (cut)
-    body+=`<circle cx="${cx}" cy="${c1y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CUT_W}"/>`;
-    // Fold line where circle meets rectangle top
-    body+=fold(`M${rX},${rectY}h${circ}`);
-    // Rectangle sides (cut left and right, fold top and bottom)
-    body+=cut(line(rX,rectY,rX,rectY+h));
-    body+=cut(line(rX+circ,rectY,rX+circ,rectY+h));
-    // Tabs on left/right of rectangle
-    body+=tab(tabLeft(rX,rectY,h));
-    body+=cut(`M${rX},${rectY}L${rX-TAB},${rectY}L${rX-TAB},${rectY+h}L${rX},${rectY+h}`);
-    body+=tab(tabRight(rX+circ,rectY,h));
-    body+=cut(`M${rX+circ},${rectY}L${rX+circ+TAB},${rectY}L${rX+circ+TAB},${rectY+h}L${rX+circ},${rectY+h}`);
-    // Fold line where rectangle meets bottom circle
-    body+=fold(`M${rX},${rectY+h}h${circ}`);
-    // Bottom circle (cut)
-    body+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CUT_W}"/>`;
+    // Circles (cut)
+    b+=`<circle cx="${cx}" cy="${c1y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
+    b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
+    // Rectangle sides (cut on left/right, fold top/bottom)
+    b+=C(`M${rX},${rectY}v${h}`);              // left side
+    b+=C(`M${rX+circ},${rectY}v${h}`);         // right side
+    b+=F(`M${rX},${rectY}h${circ}`);           // top fold (rect/top-circle)
+    b+=F(`M${rX},${rectY+h}h${circ}`);         // bottom fold (rect/bottom-circle)
+
+    // Tabs on rect left/right
+    b+=C(`M${rX},${rectY}L${rX-TAB},${rectY-TAB*.35}L${rX-TAB},${rectY+h+TAB*.35}L${rX},${rectY+h}`);
+    b+=C(`M${rX+circ},${rectY}L${rX+circ+TAB},${rectY-TAB*.35}L${rX+circ+TAB},${rectY+h+TAB*.35}L${rX+circ},${rectY+h}`);
 
     // Labels
-    body+=`<text x="${cx}" y="${c1y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#888" opacity="0.7">Top</text>`;
-    body+=faceLabel(rX,rectY,circ,h,'Side');
-    body+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#888" opacity="0.7">Bottom</text>`;
-
-    // Radius indicator
-    body+=`<line x1="${cx}" y1="${c1y}" x2="${cx+r}" y2="${c1y}" stroke="#aaa" stroke-width="0.3" stroke-dasharray="1,1"/>`;
-    body+=`<text x="${cx+r/2}" y="${c1y-2}" text-anchor="middle" font-size="3" font-family="sans-serif" fill="#888">r = ${fmtDim(gv('r'))}</text>`;
-    body+=dim(rX,rectY-6,rX+circ,rectY-6,`circ = ${fn(2*PI*gv('r'),4)} ${uu()}`,0,0);
-    body+=dim(rX+circ+TAB+6,rectY,rX+circ+TAB+6,rectY+h,fmtDim(gv('h')),0,0);
+    b+=`<text x="${cx}" y="${c1y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Top</text>`;
+    b+=lbl(rX,rectY,circ,h,'Side');
+    b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Bottom</text>`;
   }
 
-  else if(s==='sq-pyramid') {
-    const a=toMM(gv('a')), h=toMM(gv('h'));
+  /* ── SQUARE PYRAMID ────────────────────────────────────────────
+     Square base in center. Four triangles radiate outward.
+     Base edges = fold. Slant edges = cut. One tab per slant edge pair.
+  ─────────────────────────────────────────────────────────────── */
+  else if(s==='sq-pyramid'){
+    const a=mm(gv('a')),h=mm(gv('h'));
     const sl=Math.sqrt(h*h+(a/2)*(a/2));
     const bx=PAD+sl, by=PAD+sl;
     W=PAD*2+sl+a+sl; H=PAD*2+sl+a+sl+20;
 
-    // Base (fold on all 4 edges shared with faces)
-    body+=fold(line(bx,by,bx+a,by));
-    body+=fold(line(bx+a,by,bx+a,by+a));
-    body+=fold(line(bx+a,by+a,bx,by+a));
-    body+=fold(line(bx,by+a,bx,by));
-    body+=faceLabel(bx,by,a,a,'Base');
+    // Base edges = fold
+    b+=F(`M${bx},${by}h${a}v${a}h${-a}Z`);
+    b+=lbl(bx,by,a,a,'Base');
 
-    // Helper to draw a triangular face with one tab on each slant edge
-    const pyrFace=(x1,y1,x2,y2,x3,y3,tabSide1,tabSide2)=>{
-      // Cut: 2 slant edges (with tabs). Fold: base edge (already drawn above).
-      body+=tab(tabEdge(x1,y1,x3,y3,tabSide1));
-      body+=tab(tabEdge(x2,y2,x3,y3,tabSide2));
-      // Cut outline of triangle (slant edges only — base is fold, drawn above)
-      body+=cut(`M${x1},${y1}L${x3},${y3}L${x2},${y2}`);
-      // Tab cut outlines
-      const te1=tabEdgePts(x1,y1,x3,y3,tabSide1);
-      const te2=tabEdgePts(x2,y2,x3,y3,tabSide2);
-      body+=cut(`M${x1},${y1}L${te1[0]},${te1[1]}L${te1[2]},${te1[3]}L${x3},${y3}`);
-      body+=cut(`M${x2},${y2}L${te2[0]},${te2[1]}L${te2[2]},${te2[3]}L${x3},${y3}`);
-      body+=triLabel([[x1,y1],[x2,y2],[x3,y3]],'Face');
+    // Each triangular face: apex at tip, base on square edge (fold)
+    // Slant edges get cut lines + one tab each
+    const pyrTri=(ax,ay,bx2,by2,apx,apy,tabSide)=>{
+      // ax,ay = left base corner; bx2,by2 = right base corner; apx,apy = apex
+      b+=C(`M${ax},${ay}L${apx},${apy}L${bx2},${by2}`); // two slant edges (cut)
+      // Tabs on each slant edge, sitting outside the triangle
+      b+=C(tabEdge(ax,ay,apx,apy,tabSide));
+      b+=C(tabEdge(bx2,by2,apx,apy,-tabSide));
+      b+=triLbl(ax,ay,bx2,by2,apx,apy,'Face');
     };
-    pyrFace(bx,by+a,bx+a,by+a,bx+a/2,by+a+sl,-1,1);   // front
-    pyrFace(bx,by,bx+a,by,bx+a/2,by-sl,1,-1);           // back
-    pyrFace(bx,by,bx,by+a,bx-sl,by+a/2,1,-1);           // left
-    pyrFace(bx+a,by,bx+a,by+a,bx+a+sl,by+a/2,-1,1);    // right
 
-    body+=dim(bx,by-sl-6,bx+a,by-sl-6,fmtDim(gv('a')),0,0);
-    body+=dim(bx+a+sl+6,by,bx+a+sl+6,by+sl,`slant=${fn(sl/(uu()==='cm'?10:1),3)} ${uu()}`,0,0);
+    pyrTri(bx,by+a, bx+a,by+a, bx+a/2,by+a+sl, -1); // front (below base)
+    pyrTri(bx,by,   bx+a,by,   bx+a/2,by-sl,    1);  // back (above base)
+    pyrTri(bx,by,   bx,by+a,   bx-sl,by+a/2,    -1); // left
+    pyrTri(bx+a,by, bx+a,by+a, bx+a+sl,by+a/2,  1);  // right
   }
 
-  else if(s==='tri-prism') {
-    const a=toMM(gv('a')), ht=toMM(gv('ht')), h=toMM(gv('h'));
+  /* ── TRIANGULAR PRISM ──────────────────────────────────────────
+     Three rectangles in a row. Triangle end caps on top/bottom of middle face.
+     Vertical shared edges = fold. Triangle base edges = fold.
+     Outer horizontal rect edges + slant triangle edges = cut + tabs.
+  ─────────────────────────────────────────────────────────────── */
+  else if(s==='tri-prism'){
+    const a=mm(gv('a')),ht=mm(gv('ht')),h=mm(gv('h'));
     const rowY=PAD+ht;
     W=PAD*2+3*a; H=PAD*2+ht+h+ht+20;
 
-    // Three rectangular faces — shared vertical edges are fold lines
-    body+=fold(line(PAD+a,rowY,PAD+a,rowY+h));   // Face1/Face2
-    body+=fold(line(PAD+2*a,rowY,PAD+2*a,rowY+h)); // Face2/Face3
+    // Three rectangles
+    b+=C(`M${PAD},${rowY}h${a}v${h}h${-a}Z`);
+    b+=C(`M${PAD+a},${rowY}h${a}v${h}h${-a}Z`);
+    b+=C(`M${PAD+2*a},${rowY}h${a}v${h}h${-a}Z`);
 
-    // Outer vertical edges (cut)
-    body+=cut(line(PAD,rowY,PAD,rowY+h));
-    body+=cut(line(PAD+3*a,rowY,PAD+3*a,rowY+h));
+    // Fold: vertical shared edges
+    b+=F(`M${PAD+a},${rowY}v${h}`);
+    b+=F(`M${PAD+2*a},${rowY}v${h}`);
+    // Fold: Face2 top/bottom shared with triangles
+    b+=F(`M${PAD+a},${rowY}h${a}`);
+    b+=F(`M${PAD+a},${rowY+h}h${a}`);
 
-    // Outer horizontal edges (top/bottom of rectangle strip) = fold shared with triangles
-    body+=fold(line(PAD,rowY,PAD+3*a,rowY));       // top of all faces — fold with triangles? No.
-    // Actually only Face2 top/bottom share with the triangles.
-    // Face1 and Face3 top/bottom are cut lines.
-    // Let's redo:
-    body+=cut(line(PAD,rowY,PAD+a,rowY));           // Face1 top = cut
-    body+=fold(line(PAD+a,rowY,PAD+2*a,rowY));     // Face2 top = fold with top triangle
-    body+=cut(line(PAD+2*a,rowY,PAD+3*a,rowY));    // Face3 top = cut
-    body+=cut(line(PAD,rowY+h,PAD+a,rowY+h));      // Face1 bottom = cut
-    body+=fold(line(PAD+a,rowY+h,PAD+2*a,rowY+h)); // Face2 bottom = fold with bottom triangle
-    body+=cut(line(PAD+2*a,rowY+h,PAD+3*a,rowY+h)); // Face3 bottom = cut
+    // Tabs on Face1 left, top, bottom
+    b+=C(`M${PAD},${rowY}L${PAD-TAB},${rowY-TAB*.35}L${PAD-TAB},${rowY+h+TAB*.35}L${PAD},${rowY+h}`);
+    b+=C(`M${PAD},${rowY}L${PAD-TAB*.35},${rowY-TAB}L${PAD+a+TAB*.35},${rowY-TAB}L${PAD+a},${rowY}`);
+    b+=C(`M${PAD},${rowY+h}L${PAD-TAB*.35},${rowY+h+TAB}L${PAD+a+TAB*.35},${rowY+h+TAB}L${PAD+a},${rowY+h}`);
 
-    // Tabs on outer rectangle edges
-    body+=tab(tabLeft(PAD,rowY,h));
-    body+=cut(`M${PAD},${rowY}L${PAD-TAB},${rowY}L${PAD-TAB},${rowY+h}L${PAD},${rowY+h}`);
-    body+=tab(tabRight(PAD+3*a,rowY,h));
-    body+=cut(`M${PAD+3*a},${rowY}L${PAD+3*a+TAB},${rowY}L${PAD+3*a+TAB},${rowY+h}L${PAD+3*a},${rowY+h}`);
-    body+=tab(tabTop(PAD,rowY,a));
-    body+=cut(`M${PAD},${rowY}L${PAD},${rowY-TAB}L${PAD+a},${rowY-TAB}L${PAD+a},${rowY}`);
-    body+=tab(tabTop(PAD+2*a,rowY,a));
-    body+=cut(`M${PAD+2*a},${rowY}L${PAD+2*a},${rowY-TAB}L${PAD+3*a},${rowY-TAB}L${PAD+3*a},${rowY}`);
-    body+=tab(tabBottom(PAD,rowY+h,a));
-    body+=cut(`M${PAD},${rowY+h}L${PAD},${rowY+h+TAB}L${PAD+a},${rowY+h+TAB}L${PAD+a},${rowY+h}`);
-    body+=tab(tabBottom(PAD+2*a,rowY+h,a));
-    body+=cut(`M${PAD+2*a},${rowY+h}L${PAD+2*a},${rowY+h+TAB}L${PAD+3*a},${rowY+h+TAB}L${PAD+3*a},${rowY+h}`);
+    // Tabs on Face3 right, top, bottom
+    b+=C(`M${PAD+3*a},${rowY}L${PAD+3*a+TAB},${rowY-TAB*.35}L${PAD+3*a+TAB},${rowY+h+TAB*.35}L${PAD+3*a},${rowY+h}`);
+    b+=C(`M${PAD+2*a},${rowY}L${PAD+2*a-TAB*.35},${rowY-TAB}L${PAD+3*a+TAB*.35},${rowY-TAB}L${PAD+3*a},${rowY}`);
+    b+=C(`M${PAD+2*a},${rowY+h}L${PAD+2*a-TAB*.35},${rowY+h+TAB}L${PAD+3*a+TAB*.35},${rowY+h+TAB}L${PAD+3*a},${rowY+h}`);
 
-    // Top triangle (attached to Face2 top edge)
-    const tx1=PAD+a, tx2=PAD+2*a, tx3=PAD+1.5*a, ty1=rowY, ty3=PAD;
-    body+=cut(line(tx1,ty1,tx3,ty3)); // left slant = cut
-    body+=cut(line(tx2,ty1,tx3,ty3)); // right slant = cut
-    // Tabs on slant edges of top triangle
-    body+=tab(tabEdge(tx1,ty1,tx3,ty3,1));
-    body+=tab(tabEdge(tx2,ty1,tx3,ty3,-1));
-    const te1=tabEdgePts(tx1,ty1,tx3,ty3,1), te2=tabEdgePts(tx2,ty1,tx3,ty3,-1);
-    body+=cut(`M${tx1},${ty1}L${te1[0]},${te1[1]}L${te1[2]},${te1[3]}L${tx3},${ty3}`);
-    body+=cut(`M${tx2},${ty1}L${te2[0]},${te2[1]}L${te2[2]},${te2[3]}L${tx3},${ty3}`);
-    body+=triLabel([[tx1,ty1],[tx2,ty1],[tx3,ty3]],'End');
+    // Top triangle (above Face2): slant edges are cut, base is fold (already drawn)
+    const tx1=PAD+a,tx2=PAD+2*a,tx3=PAD+1.5*a,ty1=rowY,ty3=PAD;
+    b+=C(`M${tx1},${ty1}L${tx3},${ty3}L${tx2},${ty1}`); // two slant edges
+    b+=C(tabEdge(tx1,ty1,tx3,ty3,1));
+    b+=C(tabEdge(tx2,ty1,tx3,ty3,-1));
+    b+=triLbl(tx1,ty1,tx2,ty1,tx3,ty3,'End');
 
     // Bottom triangle
-    const bx1=PAD+a, bx2=PAD+2*a, bx3=PAD+1.5*a, by1=rowY+h, by3=rowY+h+ht;
-    body+=cut(line(bx1,by1,bx3,by3));
-    body+=cut(line(bx2,by1,bx3,by3));
-    body+=tab(tabEdge(bx1,by1,bx3,by3,-1));
-    body+=tab(tabEdge(bx2,by1,bx3,by3,1));
-    const te3=tabEdgePts(bx1,by1,bx3,by3,-1), te4=tabEdgePts(bx2,by1,bx3,by3,1);
-    body+=cut(`M${bx1},${by1}L${te3[0]},${te3[1]}L${te3[2]},${te3[3]}L${bx3},${by3}`);
-    body+=cut(`M${bx2},${by1}L${te4[0]},${te4[1]}L${te4[2]},${te4[3]}L${bx3},${by3}`);
-    body+=triLabel([[bx1,by1],[bx2,by1],[bx3,by3]],'End');
+    const bx1=PAD+a,bx2=PAD+2*a,bx3=PAD+1.5*a,by1=rowY+h,by3=rowY+h+ht;
+    b+=C(`M${bx1},${by1}L${bx3},${by3}L${bx2},${by1}`);
+    b+=C(tabEdge(bx1,by1,bx3,by3,-1));
+    b+=C(tabEdge(bx2,by1,bx3,by3,1));
+    b+=triLbl(bx1,by1,bx2,by1,bx3,by3,'End');
 
     // Face labels
-    body+=faceLabel(PAD,rowY,a,h,'Face 1');
-    body+=faceLabel(PAD+a,rowY,a,h,'Face 2');
-    body+=faceLabel(PAD+2*a,rowY,a,h,'Face 3');
-
-    body+=dim(PAD,rowY-TAB-6,PAD+a,rowY-TAB-6,fmtDim(gv('a')),0,0);
-    body+=dim(PAD+3*a+TAB+6,rowY,PAD+3*a+TAB+6,rowY+h,fmtDim(gv('h')),0,0);
-    body+=dim(PAD+3*a+TAB+6,PAD,PAD+3*a+TAB+6,rowY,fmtDim(gv('ht')),0,0);
+    b+=lbl(PAD,rowY,a,h,'Face 1');
+    b+=lbl(PAD+a,rowY,a,h,'Face 2');
+    b+=lbl(PAD+2*a,rowY,a,h,'Face 3');
   }
 
-  else if(s==='cone') {
-    const r=toMM(gv('r')), h=toMM(gv('h'));
-    const sl=Math.sqrt(r*r+h*h);
-    const arcAngle=2*PI*(r/sl);
+  /* ── CONE ──────────────────────────────────────────────────────
+     Sector (lateral face) + circle (base). One straight edge gets a tab.
+  ─────────────────────────────────────────────────────────────── */
+  else if(s==='cone'){
+    const r=mm(gv('r')),h=mm(gv('h'));
+    const sl=Math.sqrt(r*r+h*h), arc=2*PI*(r/sl);
     const cx=PAD+sl, cy=PAD+sl;
-    const x1=cx+sl*Math.sin(-arcAngle/2), y1=cy-sl*Math.cos(arcAngle/2);
-    const x2=cx+sl*Math.sin(arcAngle/2),  y2=cy-sl*Math.cos(arcAngle/2);
-    const la=arcAngle>PI?1:0;
+    const x1=cx+sl*Math.sin(-arc/2), y1=cy-sl*Math.cos(arc/2);
+    const x2=cx+sl*Math.sin(arc/2),  y2=cy-sl*Math.cos(arc/2);
+    const la=arc>PI?1:0;
     const c2y=cy+sl+12+r;
     W=PAD*2+sl*2; H=c2y+r+PAD+20;
 
-    // Lateral sector — 2 straight edges (cut), arc (cut), one tab on one straight edge
-    body+=cut(`M${cx},${cy}L${x2},${y2}`); // right straight = cut (no tab)
-    body+=cut(`M${x1},${y1}A${sl},${sl} 0 ${la},1 ${x2},${y2}`); // arc = cut
-    body+=tab(tabEdge(cx,cy,x1,y1,1));
-    const te=tabEdgePts(cx,cy,x1,y1,1);
-    body+=cut(`M${cx},${cy}L${te[0]},${te[1]}L${te[2]},${te[3]}L${x1},${y1}`);
-    body+=`<text x="${cx}" y="${cy-sl*.3}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#888" opacity="0.7">Lateral face</text>`;
+    // Sector: arc (cut) + two straight edges (one cut, one gets tab)
+    b+=C(`M${x1},${y1}A${sl},${sl} 0 ${la},1 ${x2},${y2}`); // arc
+    b+=C(`M${cx},${cy}L${x2},${y2}`);                         // right straight (cut, no tab)
+    b+=C(`M${cx},${cy}L${x1},${y1}`);                         // left straight (cut)
+    b+=C(tabEdge(cx,cy,x1,y1,1));                             // tab on left straight edge
+    b+=`<text x="${cx}" y="${cy-sl*.3}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Lateral face</text>`;
 
     // Base circle (cut)
-    body+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CUT_W}"/>`;
-    body+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#888" opacity="0.7">Base</text>`;
-
-    // Radius note
-    body+=`<line x1="${cx}" y1="${c2y}" x2="${cx+r}" y2="${c2y}" stroke="#aaa" stroke-width="0.3" stroke-dasharray="1,1"/>`;
-    body+=`<text x="${cx+r/2}" y="${c2y-2}" text-anchor="middle" font-size="3" font-family="sans-serif" fill="#888">r = ${fmtDim(gv('r'))}</text>`;
-    body+=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-sl}" stroke="#aaa" stroke-width="0.3" stroke-dasharray="1,1"/>`;
-    body+=`<text x="${cx+2}" y="${cy-sl/2}" font-size="3" font-family="sans-serif" fill="#888">slant = ${fn(sl/(uu()==='cm'?10:1),3)} ${uu()}</text>`;
+    b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="${CW}"/>`;
+    b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#aaa">Base</text>`;
   }
 
-  body+=scaleBar(W,H);
-  body+=infoKey(s,W,H);
-  return { body, W:Math.ceil(W), H:Math.ceil(H) };
-}
-
-// Helper: get the 4 corner points of a tab edge as [ox1,oy1,ox2,oy2]
-function tabEdgePts(x1,y1,x2,y2,side) {
-  const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
-  const nx=-dy/len*TAB*side, ny=dx/len*TAB*side;
-  const s=TAB*0.3, ex=dx/len*s, ey=dy/len*s;
-  return [x1+ex+nx, y1+ey+ny, x2-ex+nx, y2-ey+ny];
-}
-
-// Pyramid face tab helper that builds cut outlines
-function pyrFaceTabCut(x1,y1,x2,y2,x3,y3,side) {
-  const pts=tabEdgePts(x1,y1,x3,y3,side);
-  return cut(`M${x1},${y1}L${pts[0]},${pts[1]}L${pts[2]},${pts[3]}L${x3},${y3}`);
+  b+=sbar(W,H);
+  b+=key(s,W,H);
+  return{body:b,W:Math.ceil(W),H:Math.ceil(H)};
 }
 </script>
 </body>

@@ -44,7 +44,6 @@
     .legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--tx2); }
     .leg-cut { width:28px; border-top:1.5px solid var(--tx); }
     .leg-fold{ width:28px; border-top:1.5px dashed var(--tx2); }
-    .leg-tab { width:24px; height:10px; background:rgba(0,0,0,0.18); border-radius:1px; }
     .btns{ margin-top:auto; display:flex; flex-direction:column; gap:8px; }
     button{ width:100%; font-size:13px; padding:9px 0; border-radius:var(--r); cursor:pointer; font-family:inherit; font-weight:500; }
     button:disabled{ opacity:.35; cursor:not-allowed; }
@@ -76,7 +75,7 @@
 <body>
 <header>
   <h1>3D Net Generator</h1>
-  <p>Enter dimensions &rarr; printable net sized for letter paper</p>
+  <p>Enter dimensions &rarr; printable to-scale net</p>
 </header>
 <div class="app">
   <div class="side">
@@ -84,11 +83,24 @@
       <label>Solid type</label>
       <select id="solid" onchange="onSolid()">
         <option value="">— choose —</option>
-        <option value="rect-prism">Rectangular prism</option>
-        <option value="cylinder">Cylinder</option>
-        <option value="sq-pyramid">Square pyramid</option>
-        <option value="tri-prism">Triangular prism</option>
-        <option value="cone">Cone</option>
+        <optgroup label="Prisms">
+          <option value="rect-prism">Rectangular prism</option>
+          <option value="tri-prism">Triangular prism</option>
+          <option value="pent-prism">Pentagonal prism</option>
+          <option value="hex-prism">Hexagonal prism</option>
+          <option value="hept-prism">Heptagonal prism</option>
+          <option value="oct-prism">Octagonal prism</option>
+          <option value="cylinder">Cylinder</option>
+        </optgroup>
+        <optgroup label="Pyramids">
+          <option value="tri-pyramid">Triangular pyramid</option>
+          <option value="sq-pyramid">Square pyramid</option>
+          <option value="pent-pyramid">Pentagonal pyramid</option>
+          <option value="hex-pyramid">Hexagonal pyramid</option>
+          <option value="hept-pyramid">Heptagonal pyramid</option>
+          <option value="oct-pyramid">Octagonal pyramid</option>
+          <option value="cone">Cone</option>
+        </optgroup>
       </select>
     </div>
     <div class="field">
@@ -110,7 +122,6 @@
     <div class="legend" id="lg" style="display:none">
       <div class="legend-item"><div class="leg-cut"></div>Cut</div>
       <div class="legend-item"><div class="leg-fold"></div>Fold</div>
-      <div class="legend-item"><div class="leg-tab"></div>Glue tab (gray = fold &amp; glue)</div>
     </div>
     <div class="btns">
       <button class="bp" id="pb" disabled onclick="window.print()">Print net</button>
@@ -133,19 +144,24 @@
 const PI = Math.PI;
 const PW = 190.5, PH = 254;
 const PAD = 14;
-const TAB = 6;
-const BV  = TAB * 0.35;
 const CW  = 0.7;
 const FW  = 0.6;
-// FOOTER removed — key zone is now fixed in buildPageSVG
-const TABFILL = '#c8c8c8';
 
 const SOLIDS = {
   'rect-prism':{ label:'Rectangular prism', dims:[{id:'l',label:'Length'},{id:'w',label:'Width'},{id:'h',label:'Height'}] },
   'cylinder':  { label:'Cylinder',          dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
-  'sq-pyramid':{ label:'Square pyramid',    dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
-  'tri-prism': { label:'Triangular prism',  dims:[{id:'a',label:'Triangle base'},{id:'ht',label:'Triangle height'},{id:'h',label:'Prism length'}] },
-  'cone':      { label:'Cone',              dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
+  'sq-pyramid': { label:'Square pyramid',      dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'tri-prism':  { label:'Triangular prism',    dims:[{id:'a',label:'Side length'},{id:'h',label:'Length'}] },
+  'pent-prism': { label:'Pentagonal prism',    dims:[{id:'a',label:'Side length'},{id:'h',label:'Length'}] },
+  'hex-prism':  { label:'Hexagonal prism',     dims:[{id:'a',label:'Side length'},{id:'h',label:'Length'}] },
+  'hept-prism': { label:'Heptagonal prism',    dims:[{id:'a',label:'Side length'},{id:'h',label:'Length'}] },
+  'oct-prism':  { label:'Octagonal prism',     dims:[{id:'a',label:'Side length'},{id:'h',label:'Length'}] },
+  'tri-pyramid':{ label:'Triangular pyramid',  dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'pent-pyramid':{ label:'Pentagonal pyramid', dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'hex-pyramid':{ label:'Hexagonal pyramid',   dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'hept-pyramid':{ label:'Heptagonal pyramid', dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'oct-pyramid':{ label:'Octagonal pyramid',   dims:[{id:'a',label:'Base side'},{id:'h',label:'Height'}] },
+  'cone':       { label:'Cone',                dims:[{id:'r',label:'Radius'},{id:'h',label:'Height'}] },
 };
 
 function gv(id){ const e=document.getElementById('d_'+id); if(!e)return null; const v=parseFloat(e.value); return(!e.value||isNaN(v)||v<=0)?null:v; }
@@ -157,8 +173,19 @@ function calcVol(s){
   if(s==='rect-prism'){const l=gv('l'),w=gv('w'),h=gv('h');return(l&&w&&h)?l*w*h:null;}
   if(s==='cylinder')  {const r=gv('r'),h=gv('h');return(r&&h)?PI*r*r*h:null;}
   if(s==='sq-pyramid'){const a=gv('a'),h=gv('h');return(a&&h)?(1/3)*a*a*h:null;}
-  if(s==='tri-prism') {const a=gv('a'),ht=gv('ht'),h=gv('h');return(a&&ht&&h)?.5*a*ht*h:null;}
   if(s==='cone')      {const r=gv('r'),h=gv('h');return(r&&h)?(1/3)*PI*r*r*h:null;}
+  // Regular polygon prisms: V = polygon_area × length
+  const prismN={'tri-prism':3,'pent-prism':5,'hex-prism':6,'hept-prism':7,'oct-prism':8};
+  if(prismN[s]){
+    const a=gv('a'),h=gv('h'),n=prismN[s];
+    return(a&&h)?polyArea(n,a)*h:null;
+  }
+  // Regular polygon pyramids: V = (1/3) × polygon_area × height
+  const pyrN={'tri-pyramid':3,'pent-pyramid':5,'hex-pyramid':6,'hept-pyramid':7,'oct-pyramid':8};
+  if(pyrN[s]){
+    const a=gv('a'),h=gv('h'),n=pyrN[s];
+    return(a&&h)?(1/3)*polyArea(n,a)*h:null;
+  }
 }
 
 function onSolid(){
@@ -171,7 +198,10 @@ function onSolid(){
   clearAll();
 }
 function clearAll(){
-  ['vb','fb'].forEach(id=>document.getElementById(id).style.display='none');
+  ['vb'].forEach(id=>document.getElementById(id).style.display='none');
+  // Reset fit badge to neutral state (don't hide it if it was showing)
+  const fb=document.getElementById('fb');
+  fb.style.display='none';
   document.getElementById('preview-area').style.display='none';
   document.getElementById('ph').style.display='block';
   document.getElementById('nh').textContent='';
@@ -216,11 +246,18 @@ function rebuild(){
   fb.style.display='block';
   if(fits){
     fb.className='fit-badge ok';
-    fb.textContent=`Net fits on letter paper at full scale (${fmt(net.rawW,4)} \u00d7 ${fmt(net.rawH,4)} mm).`;
+    fb.textContent=`\u2713 Fits on letter paper at full scale (${fmt(net.rawW,4)} \u00d7 ${fmt(net.rawH,4)} mm).`;
   } else {
     const pct=Math.round(sc*100);
+    // Report which dimension(s) are too large
+    const overW = net.rawW > NET_W, overH = net.rawH > NET_H;
+    const u2=uu();
+    let msg = `Too large \u2014 net scaled to ${pct}% to fit. `;
+    if(overW && overH) msg += `Both width (${fmt(net.rawW,4)} mm) and height (${fmt(net.rawH,4)} mm) exceed the printable area.`;
+    else if(overW) msg += `Net is too wide (${fmt(net.rawW,4)} mm\u00a0>\u00a0${NET_W} mm printable width).`;
+    else msg += `Net is too tall (${fmt(net.rawH,4)} mm\u00a0>\u00a0${NET_H} mm printable height).`;
     fb.className='fit-badge warn';
-    fb.textContent=`Too large \u2014 net scaled to ${pct}% to fit. Reduce dimensions to print full scale.`;
+    fb.textContent=msg;
   }
   document.getElementById('nh').textContent='Print at 100% \u2014 disable \u201cfit to page\u201d in your print dialog.';
 }
@@ -266,61 +303,16 @@ function renderPaperPreview(pageSVGContent){
 
 /* ══════════════════════════════════════════════════
    DRAWING PRIMITIVES
-   
-   Tab philosophy (matching Taylor J's Math PDF):
-   - Tabs are FILLED GRAY shapes
-   - They sit outside the face boundary
-   - The outer edge of the tab IS the cut line
-   - The inner edge (shared with face) is a fold line
-   - So: draw tab fill first, then cut line around entire outline
-   
-   Approach: draw tab as filled polygon, then cut lines around perimeter.
-   Fold lines are drawn separately on shared edges.
+   C() = solid cut line (outer face edges)
+   F() = dashed fold line (shared internal edges)
 ══════════════════════════════════════════════════ */
 
 // Solid cut line
 function C(d){ return `<path d="${d}" fill="none" stroke="#111" stroke-width="${CW}" stroke-linecap="round" stroke-linejoin="round"/>`; }
-// Dashed fold line
+// Dashed fold line (shared internal edge)
 function F(d){ return `<path d="${d}" fill="none" stroke="#555" stroke-width="${FW}" stroke-dasharray="3,2" stroke-linecap="round"/>`; }
-// Filled tab with cut outline — beveled trapezoid sitting OUTSIDE an edge
-function tabRect(x,y,w,dir){
-  // x,y = start of edge; w = edge length; dir = which way tab sticks out
-  const t=TAB, b=BV;
-  let d;
-  if(dir==='up')    d=`M${x},${y} L${x-b},${y-t} L${x+w+b},${y-t} L${x+w},${y} Z`;
-  if(dir==='down')  d=`M${x},${y} L${x-b},${y+t} L${x+w+b},${y+t} L${x+w},${y} Z`;
-  if(dir==='left')  d=`M${x},${y} L${x-t},${y+b} L${x-t},${y+w-b} L${x},${y+w} Z`;
-  if(dir==='right') d=`M${x},${y} L${x+t},${y+b} L${x+t},${y+w-b} L${x},${y+w} Z`;
-  return `<path d="${d}" fill="${TABFILL}" stroke="#111" stroke-width="${CW}" stroke-linejoin="round"/>`;
-}
-// Filled tab on a slant edge (for pyramid/prism triangles)
-// The tab is a parallelogram-like strip on ONE side of the edge, pointing outward
-// tabSlant: shrinkFrac controls how far inset from each vertex the tab starts.
-// Use larger shrink (0.22) so tabs never overlap adjacent faces at shared corners.
-function tabSlant(x1,y1,x2,y2,side,shrinkFrac){
-  shrinkFrac = shrinkFrac || 0.22;
-  const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
-  const nx=-dy/len*TAB*side, ny=dx/len*TAB*side;
-  const shrink=len*shrinkFrac, ex=dx/len*shrink, ey=dy/len*shrink;
-  const d=`M${x1},${y1} L${x1+ex+nx},${y1+ey+ny} L${x2-ex+nx},${y2-ey+ny} L${x2},${y2} Z`;
-  return `<path d="${d}" fill="${TABFILL}" stroke="#111" stroke-width="${CW}" stroke-linejoin="round"/>`;
-}
-// Small beveled tab on circular arc segment (for circles)
-function tabCircle(cx,cy,r,angleDeg,width){
-  const a=angleDeg*PI/180, aw=width*PI/180;
-  const a1=a-aw/2, a2=a+aw/2;
-  const r2=r+TAB*0.8, bv=0.2;
-  const pts=[
-    [cx+r*Math.cos(a1), cy+r*Math.sin(a1)],
-    [cx+r*Math.cos(a2), cy+r*Math.sin(a2)],
-    [cx+r2*Math.cos(a2-bv), cy+r2*Math.sin(a2-bv)],
-    [cx+r2*Math.cos(a1+bv), cy+r2*Math.sin(a1+bv)],
-  ];
-  const d=`M${pts[0][0]},${pts[0][1]} L${pts[1][0]},${pts[1][1]} L${pts[2][0]},${pts[2][1]} L${pts[3][0]},${pts[3][1]} Z`;
-  return `<path d="${d}" fill="${TABFILL}" stroke="#111" stroke-width="${CW}" stroke-linejoin="round"/>`;
-}
 
-// Face label
+// // Face label
 function lbl(x,y,w,h,t){
   if(!t||w<=0||h<=0)return'';
   const fs=Math.max(2.5,Math.min(5,w/6,h/4));
@@ -366,85 +358,85 @@ function scaleBar(){
 
 /* ══════════════════════════════════════════════════
    NET BUILDERS
-   Each builder returns {body, rawW, rawH} where
-   rawW/rawH are the natural net dimensions in mm.
-   The caller scales the net to fit within NET_W × NET_H
-   and wraps it in a fixed-page SVG.
+   Each net is drawn as ONE connected outline path
+   so it prints as a single piece.
+   Fold lines are drawn on top as dashed lines.
 ══════════════════════════════════════════════════ */
+
+// ── Polygon math helpers ──
+function polyArea(n,a){ return n*a*a/(4*Math.tan(PI/n)); }
+function polyAp(n,a)  { return a/(2*Math.tan(PI/n)); }   // apothem (inradius)
+function polyR(n,a)   { return a/(2*Math.sin(PI/n)); }   // circumradius
+
+// Regular polygon vertices, flat-bottom orientation, centered at (cx,cy)
+// Returns array of [x,y] in CW order (SVG y-down)
+function polyVerts(n, R, cx, cy){
+  // PI/2 - PI/n puts the first two vertices at the bottom (flat-bottom orientation)
+  const start = PI/2 - PI/n;
+  return Array.from({length:n}, (_,k)=>{
+    const a = start + 2*PI*k/n;
+    return [cx + R*Math.cos(a), cy + R*Math.sin(a)];
+  });
+}
+// Flat-top orientation (rotated 180°) — top edge is horizontal, bottom points down
+// Used for bottom caps so the flat edge faces UP toward the rectangle
+function polyVertsFlipped(n, R, cx, cy){
+  const start = PI/2 - PI/n + PI;
+  return Array.from({length:n}, (_,k)=>{
+    const a = start + 2*PI*k/n;
+    return [cx + R*Math.cos(a), cy + R*Math.sin(a)];
+  });
+}
+
+// SVG path string for a polygon
+function polyPath(verts){ return verts.map((p,i)=>(i===0?`M`:` L`)+`${p[0].toFixed(3)},${p[1].toFixed(3)}`).join('')+' Z'; }
+
+// Apex point for a pyramid triangle face:
+// edge from p1→p2, apex sticks outward by sl (slant height)
+function faceApex(p1, p2, sl){
+  const mx=(p1[0]+p2[0])/2, my=(p1[1]+p2[1])/2;
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1], len=Math.sqrt(dx*dx+dy*dy);
+  // CW polygon in SVG (y-down): outward normal = rotate edge CW = (dy/len, -dx/len)
+  return [mx + sl*dy/len, my - sl*dx/len];
+}
+
 function buildNet(s){
   let b='', rawW=0, rawH=0;
-  const P=PAD; // shorthand
 
   /* ── RECTANGULAR PRISM ─────────────────────────────────────
-     Layout (Taylor J's PDF page 2):
-     Cross shape:
-       [Top] sitting above center column
-       [Left | Front | Back | Right] horizontal row
-       [Bottom] sitting below Front
-     
-     Wait — re-reading PDF page 2:
-     It's actually: TOP face on top of a column, then 3 faces in a row below,
-     then BOTTOM below left face.
-     
-     Actually the clearest layout from the PDF:
-     Row: [Left(w×h)] [Front(l×h)] [Right(w×h)] [extra]
-     Above Front: [Top(l×w)]
-     Below Left: [Bottom(l×w)] with bottom tab
-     
-     Let me use the classic cross that matches:
-     Column: Top, Front, Bottom, Back stacked
-     Left attached to left of Front row
-     Right attached to right of Front row
-     Tabs: top of Top, bottom of Back, outer sides of Left/Right
+     Classic cross net. Traced as a single connected outline:
+     Start top-left of Top face, go clockwise around the entire
+     cross shape including Left and Right wings.
+
+     Layout:
+           [Top  l×w]
+     [Left w×h][Front l×h][Right w×h]
+           [Bottom l×w]
+           [Back  l×h]
   ───────────────────────────────────────────────────────── */
   if(s==='rect-prism'){
     const l=toMM(gv('l')), w=toMM(gv('w')), h=toMM(gv('h'));
-    // Cross layout: center column x from cx
     const cx=PAD+w;
-    const yTop=PAD, yFront=PAD+w, yBot=PAD+w+h, yBack=PAD+w+2*h;
-    rawrawW=PAD*2+w+l+w;
-    rawH=PAD+w+h+w+h;
+    const yTop=PAD, yFront=PAD+w, yBot=PAD+w+h, yBack=PAD+2*w+h;
+    rawW=PAD*2+w+l+w;
+    rawH=PAD*2+2*w+2*h;
 
-    // ── Tabs first (so face lines draw on top) ──
-    // Top face: top edge tab
-    b+=tabRect(cx,yTop,l,'up');
-    // Top face: left corner tab and right corner tab
-    b+=tabRect(cx,yTop,w,'left');
-    b+=tabRect(cx+l,yTop,w,'right');
-    // Back face: bottom tab
-    b+=tabRect(cx,yBack+h,l,'down');
-    // Back face: left and right tabs  
-    b+=tabRect(cx,yBack,h,'left');
-    b+=tabRect(cx+l,yBack,h,'right');
-    // Left face: outer left, top, bottom
-    b+=tabRect(PAD,yFront,h,'left');
-    b+=tabRect(PAD,yFront,h,'up');
-    b+=tabRect(PAD,yFront+h,h,'down');  // corrected: w not h
-    // Right face: outer right, top, bottom
-    b+=tabRect(cx+l,yFront,h,'right');
-    b+=tabRect(cx+l,yFront,h,'up');
-    b+=tabRect(cx+l,yFront+h,h,'down');
-    // Bottom face: left and right and bottom
-    b+=tabRect(cx,yBot,w,'left');
-    b+=tabRect(cx+l,yBot,w,'right');
-    b+=tabRect(cx,yBot+w,l,'down');
+    // Full cross outline as a single closed path
+    b+=C(`M${cx},${yTop} h${l} v${w} h${w} v${h} h${-w} v${w} h${-l} v${-w} h${-w} v${-h} h${w} v${-w} Z`);
+    // Back face outer edges (left, bottom, right — not the top/shared edge)
+    b+=C(`M${cx},${yBack} v${h} h${l} v${-h}`);
+    // Knockout: white line over the Bottom/Back shared edge to erase the solid cut line there,
+    // so the dashed fold line drawn next is the only visible line at that position.
+    b+=`<line x1="${cx}" y1="${yBack}" x2="${cx+l}" y2="${yBack}" stroke="white" stroke-width="${CW*2.5}"/>`;
 
-    // ── Face outlines (cut) ──
-    b+=C(`M${cx},${yTop}h${l}v${w}h${-l}Z`);       // Top
-    b+=C(`M${cx},${yFront}h${l}v${h}h${-l}Z`);     // Front
-    b+=C(`M${cx},${yBot}h${l}v${w}h${-l}Z`);       // Bottom
-    b+=C(`M${cx},${yBack}h${l}v${h}h${-l}Z`);      // Back
-    b+=C(`M${PAD},${yFront}h${w}v${h}h${-w}Z`);    // Left
-    b+=C(`M${cx+l},${yFront}h${w}v${h}h${-w}Z`);   // Right
+    // Fold lines (all shared edges — drawn as dashed on top of cut outline)
+    b+=F(`M${cx},${yFront}h${l}`);       // Top/Front
+    b+=F(`M${cx},${yBot}h${l}`);         // Front/Bottom
+    b+=F(`M${cx},${yBack}h${l}`);        // Bottom/Back ← this is the dashed line
+    b+=F(`M${cx},${yFront}v${h}`);       // Front/Left
+    b+=F(`M${cx+l},${yFront}v${h}`);     // Front/Right
 
-    // ── Fold lines (shared edges) ──
-    b+=F(`M${cx},${yFront}h${l}`);         // Top/Front
-    b+=F(`M${cx},${yBot}h${l}`);           // Front/Bottom
-    b+=F(`M${cx},${yBack}h${l}`);          // Bottom/Back
-    b+=F(`M${cx},${yFront}v${h}`);         // Front/Left
-    b+=F(`M${cx+l},${yFront}v${h}`);       // Front/Right
-
-    // ── Labels ──
+    // Labels
     b+=lbl(cx,yTop,l,w,'Top');
     b+=lbl(cx,yFront,l,h,'Front');
     b+=lbl(cx,yBot,l,w,'Bottom');
@@ -454,175 +446,165 @@ function buildNet(s){
   }
 
   /* ── CYLINDER ───────────────────────────────────────────────
-     Layout (Taylor J's PDF page 6):
-     Circle ABOVE rectangle (top circle)
-     Rectangle in middle (width=circumference, height=cylinder_h)
-     Circle BELOW rectangle (bottom circle)
-     Tab: on RIGHT side of rectangle only
-     Small tabs on circles: left, right, top of top circle; left, right, bottom of bottom circle
+     Rectangle with circles attached to top and bottom edges.
+     The circles share an edge with the rectangle (fold line).
+     Drawn as: rectangle outline + two full circles
+     (circles are separate closed paths but touch rectangle edge,
+     making the net one connected piece when cut out)
   ───────────────────────────────────────────────────────── */
   else if(s==='cylinder'){
     const r=toMM(gv('r')), h=toMM(gv('h')), circ=2*PI*r;
-    // Rectangle: width=circ (unrolled circumference), height=h
-    const rectW=circ, rectH=h;
-    const rectX=PAD+r;       // center of circle aligns with center of rect
-    const rectY=PAD+r*2;     // rect top is below top circle
-    const cTopX=PAD+r+circ/2, cTopY=PAD+r;     // top circle center
-    const cBotX=cTopX, cBotY=rectY+rectH+r;    // bottom circle center
-    rawW=PAD*2+circ+r;
-    rawH=PAD+r*2+rectH+r*2;
+    // Center circles over the rectangle
+    const rectX=PAD+r, rectY=PAD+r*2;
+    const cX=rectX+circ/2; // circle center x = center of rect
+    const cTopY=PAD+r;     // top circle: bottom edge touches rectY
+    const cBotY=rectY+h+r; // bottom circle: top edge touches rectY+h
+    rawW=PAD+r*2+circ;
+    rawH=PAD*2+r*2+h+r*2;
 
-    // ── Tabs first ──
-    // Right tab on rectangle
-    b+=tabRect(rectX+rectW,rectY,rectH,'right');
-    // Small tabs on top circle: left, right, top (120° each, positioned at 180°,0°,270° = 9,3,12 o'clock)
-    b+=tabCircle(cTopX,cTopY,r,180,25);   // left
-    b+=tabCircle(cTopX,cTopY,r,0,25);     // right
-    b+=tabCircle(cTopX,cTopY,r,270,25);   // top (12 o'clock = 270 in SVG y-down)
-    // Small tabs on bottom circle: left, right, bottom
-    b+=tabCircle(cBotX,cBotY,r,180,25);   // left
-    b+=tabCircle(cBotX,cBotY,r,0,25);     // right
-    b+=tabCircle(cBotX,cBotY,r,90,25);    // bottom (6 o'clock = 90 in SVG)
+    // Rectangle (single outline)
+    b+=C(`M${rectX},${rectY}h${circ}v${h}h${-circ}Z`);
+    // Top circle — tangent to top of rect
+    b+=`<circle cx="${cX}" cy="${cTopY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
+    // Bottom circle — tangent to bottom of rect
+    b+=`<circle cx="${cX}" cy="${cBotY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
 
-    // ── Face outlines (cut) ──
-    b+=`<circle cx="${cTopX}" cy="${cTopY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
-    b+=`<circle cx="${cBotX}" cy="${cBotY}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
-    b+=C(`M${rectX},${rectY}h${rectW}v${rectH}h${-rectW}Z`);
+    // Fold lines at rectangle top/bottom (where circles join)
+    b+=F(`M${rectX},${rectY}h${circ}`);
+    b+=F(`M${rectX},${rectY+h}h${circ}`);
 
-    // ── Fold lines (where circles touch rectangle) ──
-    b+=F(`M${rectX},${rectY}h${rectW}`);       // top of rect = fold to top circle
-    b+=F(`M${rectX},${rectY+rectH}h${rectW}`); // bottom of rect = fold to bottom circle
-
-    // ── Labels ──
-    b+=`<text x="${cTopX}" y="${cTopY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Top</text>`;
-    b+=lbl(rectX,rectY,rectW,rectH,'Side');
-    b+=`<text x="${cBotX}" y="${cBotY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Bottom</text>`;
+    // Labels
+    b+=`<text x="${cX}" y="${cTopY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Top</text>`;
+    b+=lbl(rectX,rectY,circ,h,'Side');
+    b+=`<text x="${cX}" y="${cBotY}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Bottom</text>`;
   }
 
-  /* ── SQUARE PYRAMID ─────────────────────────────────────────
-     Layout (Taylor J's PDF page 4):
-     Square base in center with dashed edges
-     4 triangular faces radiating out
-     ONE filled gray tab per face on ONE slant edge (alternating clockwise)
+  /* ── SQUARE PYRAMID (4-sided) ───────────────────────────────
+     Generic polygon pyramid — shared with all n-gon pyramids below
   ───────────────────────────────────────────────────────── */
-  else if(s==='sq-pyramid'){
+  else if(s==='sq-pyramid' || s==='tri-pyramid' || s==='pent-pyramid' ||
+          s==='hex-pyramid' || s==='hept-pyramid' || s==='oct-pyramid'){
+    const n = {
+      'tri-pyramid':3,'sq-pyramid':4,'pent-pyramid':5,
+      'hex-pyramid':6,'hept-pyramid':7,'oct-pyramid':8
+    }[s];
     const a=toMM(gv('a')), h=toMM(gv('h'));
-    const sl=Math.sqrt(h*h+(a/2)*(a/2));
-    const bx=PAD+sl, by=PAD+sl;
-    rawW=PAD*2+sl+a+sl;
-    rawH=PAD+sl+a+sl;
+    const ap=polyAp(n,a), R=polyR(n,a);
+    const sl=Math.sqrt(h*h+ap*ap);  // slant height from edge midpoint to apex
 
-    // ── Tabs first (alternating: top=right slant, bottom=left, left=top, right=bottom) ──
-    // Top face: tab on RIGHT slant → from (bx+a,by) to apex (bx+a/2,by-sl), outside = right+up
-    b+=tabSlant(bx+a,by, bx+a/2,by-sl, -1);
-    // Bottom face: tab on LEFT slant → from (bx,by+a) to apex (bx+a/2,by+a+sl), outside = left+down
-    b+=tabSlant(bx,by+a, bx+a/2,by+a+sl, 1);
-    // Left face: tab on TOP slant → from (bx,by) to apex (bx-sl,by+a/2), outside = up+left
-    b+=tabSlant(bx,by, bx-sl,by+a/2, 1);
-    // Right face: tab on BOTTOM slant → from (bx+a,by+a) to apex (bx+a+sl,by+a/2), outside = down+right
-    b+=tabSlant(bx+a,by+a, bx+a+sl,by+a/2, -1);
+    // Bounding box: polygon center + sl in each outward direction
+    // For flat-bottom: widest extent is ±(R+sl) horizontally, ±(R+sl) vertically (approx)
+    // More precisely: extend each edge by sl outward — compute all apex positions
+    const cx=PAD+R+sl, cy=PAD+R+sl;
+    rawW=Math.ceil(cx*2);
+    rawH=Math.ceil(cy*2);
 
-    // ── Face outlines (cut) ──
-    // Top triangle
-    b+=C(`M${bx},${by}L${bx+a/2},${by-sl}L${bx+a},${by}`);
-    // Bottom triangle
-    b+=C(`M${bx},${by+a}L${bx+a/2},${by+a+sl}L${bx+a},${by+a}`);
-    // Left triangle
-    b+=C(`M${bx},${by}L${bx-sl},${by+a/2}L${bx},${by+a}`);
-    // Right triangle
-    b+=C(`M${bx+a},${by}L${bx+a+sl},${by+a/2}L${bx+a},${by+a}`);
+    const verts=polyVerts(n, R, cx, cy);
+    const apexes=verts.map((_,i)=>faceApex(verts[i], verts[(i+1)%n], sl));
 
-    // ── Base = all fold lines ──
-    b+=F(`M${bx},${by}h${a}v${a}h${-a}Z`);
-    b+=lbl(bx,by,a,a,'Base');
+    // Single star outline: corner → apex → corner → apex → ...
+    const starPts=[];
+    for(let i=0;i<n;i++){ starPts.push(verts[i]); starPts.push(apexes[i]); }
+    b+=C(starPts.map((p,i)=>(i===0?'M':'L')+`${p[0].toFixed(3)},${p[1].toFixed(3)}`).join(' ')+' Z');
 
-    // ── Triangle labels ──
-    b+=triLbl(bx,by, bx+a,by, bx+a/2,by-sl,'Face');
-    b+=triLbl(bx,by+a, bx+a,by+a, bx+a/2,by+a+sl,'Face');
-    b+=triLbl(bx,by, bx,by+a, bx-sl,by+a/2,'Face');
-    b+=triLbl(bx+a,by, bx+a,by+a, bx+a+sl,by+a/2,'Face');
+    // Fold lines: polygon edges (base perimeter)
+    for(let i=0;i<n;i++){
+      const p1=verts[i], p2=verts[(i+1)%n];
+      b+=F(`M${p1[0].toFixed(3)},${p1[1].toFixed(3)}L${p2[0].toFixed(3)},${p2[1].toFixed(3)}`);
+    }
+    // Labels
+    const labelR=R*0.55;
+    b+=`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(2.5,Math.min(4,a/6))}" font-family="sans-serif" fill="#ccc">Base</text>`;
+    for(let i=0;i<n;i++){
+      const ap1=apexes[i], p1=verts[i], p2=verts[(i+1)%n];
+      const lx=(p1[0]+p2[0]+ap1[0])/3, ly=(p1[1]+p2[1]+ap1[1])/3;
+      b+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="3" font-family="sans-serif" fill="#ccc">Face</text>`;
+    }
   }
 
-  /* ── TRIANGULAR PRISM ───────────────────────────────────────
-     3 rectangles stacked vertically
-     Triangles on LEFT and RIGHT of middle rectangle
-     Tabs: top of rect1, bottom of rect3, one slant per triangle
+  /* ── POLYGON PRISMS (tri, pent, hex, hept, oct) ─────────────
+     n rectangles in a row, polygonal end caps above + below middle rectangle.
+     Layout: rect row at y=PAD+polyH, caps centered above/below middle rect.
   ───────────────────────────────────────────────────────── */
-  else if(s==='tri-prism'){
-    const a=toMM(gv('a')), ht=toMM(gv('ht')), h=toMM(gv('h'));
-    const colX=PAD+ht;
-    const r1Y=PAD, r2Y=PAD+h, r3Y=PAD+2*h;
-    const midY=r2Y+h/2;
-    const lApx=PAD, rApx=colX+a+ht;
-    rawW=PAD*2+ht+a+ht;
-    rawH=PAD+3*h;
+  else if(s==='tri-prism' || s==='pent-prism' || s==='hex-prism' ||
+          s==='hept-prism' || s==='oct-prism'){
+    const n = {'tri-prism':3,'pent-prism':5,'hex-prism':6,'hept-prism':7,'oct-prism':8}[s];
+    const a=toMM(gv('a')), h=toMM(gv('h'));
+    const ap=polyAp(n,a), R=polyR(n,a);
+    const polyH = R+ap;  // total height of polygon (circumradius above + apothem below center)
 
-    // ── Tabs first (4 only, matching reference PDF) ──
-    b+=tabRect(colX,r1Y,a,'up');                          // top of rect1
-    b+=tabRect(colX,r3Y+h,a,'down');                      // bottom of rect3
-    b+=tabSlant(colX,r2Y, lApx,midY, 1);                  // top slant of left triangle
-    b+=tabSlant(colX+a,r2Y+h, rApx,midY, 1);             // bottom slant of right triangle
+    const rowX=PAD, rowY=PAD+polyH;
+    const mi=Math.floor(n/2);
+    const midRectX=rowX+mi*a;
+    const capCX=midRectX+a/2;  // x center of both caps
 
-    // ── Face outlines (cut) ──
-    b+=C(`M${colX},${r1Y}h${a}v${h}h${-a}Z`);
-    b+=C(`M${colX},${r2Y}h${a}v${h}h${-a}Z`);
-    b+=C(`M${colX},${r3Y}h${a}v${h}h${-a}Z`);
-    b+=C(`M${colX},${r2Y}L${lApx},${midY}L${colX},${r2Y+h}`);   // Left triangle
-    b+=C(`M${colX+a},${r2Y}L${rApx},${midY}L${colX+a},${r2Y+h}`); // Right triangle
+    rawW=PAD*2+n*a;
+    rawH=PAD*2+polyH+h+polyH;
 
-    // ── Fold lines ──
-    b+=F(`M${colX},${r2Y}h${a}`);     // rect1/rect2
-    b+=F(`M${colX},${r3Y}h${a}`);     // rect2/rect3
-    b+=F(`M${colX},${r2Y}v${h}`);     // rect2 left = left tri base
-    b+=F(`M${colX+a},${r2Y}v${h}`);   // rect2 right = right tri base
+    // Rectangle row — full outline
+    b+=C(`M${rowX},${rowY}h${n*a}v${h}h${-n*a}Z`);
 
-    // ── Labels ──
-    b+=lbl(colX,r1Y,a,h,'Face 1');
-    b+=lbl(colX,r2Y,a,h,'Face 2');
-    b+=lbl(colX,r3Y,a,h,'Face 3');
-    b+=triLbl(colX,r2Y,colX,r2Y+h,lApx,midY,'End');
-    b+=triLbl(colX+a,r2Y,colX+a,r2Y+h,rApx,midY,'End');
+    // Top cap: flat-bottom polygon, center at (capCX, rowY-ap)
+    // Its bottom edge (verts[0]→verts[1]) is at y=rowY — shared with rect top.
+    // Draw only the n-1 NON-shared edges (skip verts[0]→verts[1]).
+    const topCY=rowY-ap;
+    const tv=polyVerts(n,R,capCX,topCY);
+    // Draw from verts[1] around to verts[0], skipping the bottom edge
+    b+=C('M'+tv[1].map(v=>v.toFixed(3)).join(',')+
+         tv.slice(2).map(v=>' L'+v.map(x=>x.toFixed(3)).join(',')).join('')+
+         ' L'+tv[0].map(v=>v.toFixed(3)).join(','));
+    // White knockout + fold line for the shared edge
+    b+=`<line x1="${tv[0][0].toFixed(3)}" y1="${rowY.toFixed(3)}" x2="${tv[1][0].toFixed(3)}" y2="${rowY.toFixed(3)}" stroke="white" stroke-width="${CW*2.5}"/>`;
+    b+=F(`M${tv[0][0].toFixed(3)},${rowY.toFixed(3)}L${tv[1][0].toFixed(3)},${rowY.toFixed(3)}`);
+
+    // Bottom cap: flat-top polygon (flipped), center at (capCX, rowY+h+ap)
+    // Its top edge (verts[0]→verts[1]) is at y=rowY+h — shared with rect bottom.
+    const botCY=rowY+h+ap;
+    const bv=polyVertsFlipped(n,R,capCX,botCY);
+    // Draw from verts[1] around to verts[0], skipping the top edge
+    b+=C('M'+bv[1].map(v=>v.toFixed(3)).join(',')+
+         bv.slice(2).map(v=>' L'+v.map(x=>x.toFixed(3)).join(',')).join('')+
+         ' L'+bv[0].map(v=>v.toFixed(3)).join(','));
+    // White knockout + fold line for shared edge
+    b+=`<line x1="${bv[0][0].toFixed(3)}" y1="${(rowY+h).toFixed(3)}" x2="${bv[1][0].toFixed(3)}" y2="${(rowY+h).toFixed(3)}" stroke="white" stroke-width="${CW*2.5}"/>`;
+    b+=F(`M${bv[0][0].toFixed(3)},${(rowY+h).toFixed(3)}L${bv[1][0].toFixed(3)},${(rowY+h).toFixed(3)}`);
+
+    // Fold lines: vertical dividers between rectangles
+    for(let i=1;i<n;i++) b+=F(`M${rowX+i*a},${rowY}v${h}`);
+
+    // Labels
+    for(let i=0;i<n;i++)
+      b+=`<text x="${rowX+i*a+a/2}" y="${rowY+h/2}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(2.5,Math.min(4,a/6,h/4))}" font-family="sans-serif" fill="#ccc">F${i+1}</text>`;
+    b+=`<text x="${capCX}" y="${topCY}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(2.5,Math.min(4,a/4))}" font-family="sans-serif" fill="#ccc">End</text>`;
+    b+=`<text x="${capCX}" y="${botCY}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(2.5,Math.min(4,a/4))}" font-family="sans-serif" fill="#ccc">End</text>`;
   }
 
   /* ── CONE ───────────────────────────────────────────────────
-     Layout (Taylor J's PDF page 5):
-     Sector on top (lateral face)
-     Circle BELOW sector, touching arc bottom
-     Tab: filled strip along ONE straight edge of sector
-     Small tabs on circle: left, right, bottom
+     Sector above, circle below.
+     Circle is tangent to the lowest point of the arc (cx, cy+sl).
+     A short connecting line makes them one piece.
   ───────────────────────────────────────────────────────── */
   else if(s==='cone'){
     const r=toMM(gv('r')), h=toMM(gv('h'));
     const sl=Math.sqrt(r*r+h*h), arc=2*PI*(r/sl);
     const cx=PAD+sl, cy=PAD+sl;
-    const x1=cx+sl*Math.sin(-arc/2), y1=cy-sl*Math.cos(arc/2);
-    const x2=cx+sl*Math.sin( arc/2), y2=cy-sl*Math.cos(arc/2);
+    const x1=cx-sl*Math.sin(arc/2), y1=cy+sl*Math.cos(arc/2);
+    const x2=cx+sl*Math.sin(arc/2), y2=cy+sl*Math.cos(arc/2);
     const la=arc>PI?1:0;
-    // Bottom of arc is at cy + sl*(1-cos(arc/2)) below center... 
-    // actually lowest point of arc is at cy + sl when arc=PI (semicircle)
-    // For the circle: center it directly below the arc's lowest point
-    const arcBot=cy+sl*Math.sin(arc/2-PI/2+PI/2); // just cy for centered
-    // Place circle so its top edge touches the midpoint bottom of the sector arc
-    const c2y=cy+sl+8+r;    // gap of 8mm between sector bottom and circle top
+    // Arc bottom-most point: always (cx, cy+sl) since sector opens downward symmetrically
+    const arcBottomY=cy+sl;
+    const c2y=arcBottomY+r;  // circle center, tangent to arc bottom
     rawW=PAD*2+sl*2;
-    rawH=PAD+2*sl+8+r*2;
+    rawH=PAD*2+sl+r*2;  // from top of sector (cy-0=PAD+sl above) to bottom of circle
 
-    // ── Tab on RIGHT straight edge (cx,cy)->(x2,y2), pointing outward ──
-    b+=tabSlant(cx,cy, x2,y2, 1);
-
-    // ── Small tabs on the base circle ──
-    b+=tabCircle(cx,c2y,r,180,28);  // left
-    b+=tabCircle(cx,c2y,r,0,28);    // right
-    b+=tabCircle(cx,c2y,r,90,28);   // bottom
-
-    // ── Sector (cut) ──
-    b+=C(`M${cx},${cy}L${x1},${y1}A${sl},${sl} 0 ${la},1 ${x2},${y2}Z`);
-
-    // ── Base circle (cut) ──
+    // Sector outline
+    b+=C(`M${cx},${cy} L${x1},${y1} A${sl},${sl} 0 ${la},1 ${x2},${y2} Z`);
+    // Base circle
     b+=`<circle cx="${cx}" cy="${c2y}" r="${r}" fill="none" stroke="#111" stroke-width="${CW}"/>`;
+    // Thin connector line joining arc bottom to circle top (makes one piece)
+    b+=C(`M${cx},${arcBottomY} L${cx},${c2y-r}`);
 
-    // ── Labels ──
-    b+=`<text x="${cx}" y="${cy-sl*.35}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Lateral</text>`;
+    b+=`<text x="${cx}" y="${cy+sl*0.35}" text-anchor="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Lateral</text>`;
     b+=`<text x="${cx}" y="${c2y}" text-anchor="middle" dominant-baseline="middle" font-size="3.5" font-family="sans-serif" fill="#ccc">Base</text>`;
   }
 
